@@ -1,9 +1,9 @@
 {
-  "version": "99",
+  "version": "100",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V99_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V100_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V99 ADMIN · Corrige el falso «cola llena» y elimina límites heredados fijos de 10 anuncios dentro de las funciones de cola/lotes. La capacidad configurada pasa a ser la referencia real (1–5000). Mantiene el botón Capacidad, rotación, diagnóstico, banner, interfaz y fluidez."
+  "notes": "DIAGPROG5 V100 ADMIN · Corrección consolidada basada en tu instalación real: capacidad_cola.json pasa a ser la fuente de verdad, se elimina el MAX_COLA=10 heredado, se corrigen lotes que seguían limitados a 10, carga/duplicado/generación/dashboard usan la capacidad efectiva, el ajuste admite hasta 5000 y el botón Capacidad sincroniza también la configuración antigua. Mantiene rotación, diagnóstico, banner, interfaz y fluidez."
 }
