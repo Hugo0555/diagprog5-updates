@@ -1,9 +1,9 @@
 {
-  "version": "89.2",
+  "version": "89.3",
   "channel": "admin",
   "required": false,
   "filename": "DIAGPROG5_V89_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V89.2 ADMIN · Corrección del actualizador: validación dinámica de versión, mantiene fixes de rotación, publicados.json persistente, migración, banner, interfaz y fluidez."
+  "notes": "DIAGPROG5 V89.3 ADMIN · Instalación en carpeta de versión nueva para eliminar WinError 32. Verifica que la nueva versión permanezca abierta antes de cerrar la anterior. Mantiene rotación, migración, banner, interfaz y fluidez."
 }
