@@ -1,9 +1,9 @@
 {
-  "version": "92",
+  "version": "93",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V92_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V93_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V92 ADMIN · Diagnóstico total de rotación en una sola ventana: configuración, publicados, candidatos, cola, errores completos, estado y último evento del motor, candidatos con/sin URL, Chrome/CDP y últimas líneas del log. Una sola captura debe bastar para depurar. Mantiene motor de rotación, banner, interfaz y fluidez."
+  "notes": "DIAGPROG5 V93 ADMIN · El botón Diagnosticar rotación abre siempre un único informe desplazable con diagnóstico original, estado del motor, candidatos, cola y errores sin cortar, últimas 30 líneas del log y botón Copiar informe. Ya no hace falta abrir varias ventanas ni sacar varias capturas."
 }
