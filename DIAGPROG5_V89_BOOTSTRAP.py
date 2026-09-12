@@ -8,8 +8,8 @@ import subprocess
 import py_compile
 import traceback
 
-TARGET_VERSION = "89.2"
-OUTPUT_NAME = "bot_wallapop_profesional_v89_2_ADMIN_ROTACION_FIX.py"
+TARGET_VERSION = "89.3"
+OUTPUT_NAME = "bot_wallapop_profesional_v89_3_ADMIN_ROTACION_FIX.py"
 BANNER_NAME = "banner_dp5_limpio_v15.png"
 
 
@@ -94,6 +94,10 @@ def _es_fuente_completa(path):
     try:
         p = Path(path)
         if not p.is_file() or p.stat().st_size < 350_000:
+            return False
+
+        nombre = p.name.lower()
+        if "bootstrap" in nombre:
             return False
         t = _leer_texto(p)
         requisitos = (
@@ -292,7 +296,7 @@ def _capa_fluidez():
     return """
 
 # =========================================================
-# V89.2 · CAPA DE FLUIDEZ DE INTERFAZ
+# V89.3 · CAPA DE FLUIDEZ DE INTERFAZ
 # =========================================================
 # Agrupa refrescos repetidos que ocurren casi al mismo tiempo.
 try:
@@ -331,13 +335,13 @@ try:
                 return _v89_dashboard_original()
 
 except Exception as _e_v89_ui:
-    print("[V89.2] Capa de fluidez dashboard no aplicada:", _e_v89_ui)
+    print("[V89.3] Capa de fluidez dashboard no aplicada:", _e_v89_ui)
 
 """
 
 
 def _inyectar_fluidez(texto):
-    if "V89.2 · CAPA DE FLUIDEZ DE INTERFAZ" in texto:
+    if "V89.3 · CAPA DE FLUIDEZ DE INTERFAZ" in texto:
         return texto
     marker = "actualizar_menu_lotes()\n\ntry:\n    ventana.after(\n        5000,\n        _programar_autoguardado_borrador\n    )"
     if marker in texto:
@@ -350,7 +354,7 @@ def _hacer_comprobacion_update_inicio_no_bloqueante(texto):
     fin = texto.find("# Autochequeo del creador al arrancar.", inicio)
     if inicio == -1 or fin == -1:
         return texto
-    nuevo = """# Comprobación silenciosa del servidor de actualizaciones (V89.2, no bloqueante).
+    nuevo = """# Comprobación silenciosa del servidor de actualizaciones (V89.3, no bloqueante).
 def _v89_comprobar_updates_en_segundo_plano():
     def _trabajo():
         try:
@@ -848,7 +852,7 @@ def _migrar_publicados_legacy():
 ''',
         '''            (
                 "No hay candidatos seguros registrados por DIAGPROG5. "
-                "V89.2 ya migró automáticamente los publicados.json antiguos. "
+                "V89.3 ya migró automáticamente los publicados.json antiguos. "
                 "Si sigue en 0, esos anuncios fueron publicados antes de que "
                 "DIAGPROG5 los registrara y no se borrarán automáticamente."
             )
@@ -923,31 +927,105 @@ def main():
     nuevo = construir_v89(fuente, texto)
 
     home = Path.home()
-    local = Path(os.environ.get("LOCALAPPDATA") or os.environ.get("APPDATA") or home)
+    local = Path(
+        os.environ.get("LOCALAPPDATA")
+        or os.environ.get("APPDATA")
+        or home
+    )
     data = local / "DIAGPROG5"
-    carpeta_updates = data / "actualizaciones"
-    carpeta_updates.mkdir(parents=True, exist_ok=True)
 
-    destino = carpeta_updates / OUTPUT_NAME
-    _escribir_texto_con_reintentos(
-        destino,
-        nuevo
+    # V89.3: cada instalación se escribe en una carpeta NUEVA.
+    # Así nunca intentamos reemplazar un .py que Windows pueda tener abierto.
+    sello = time.strftime("%Y%m%d_%H%M%S")
+    carpeta_version = (
+        data
+        / "versiones"
+        / ("V89_3_" + sello)
+    )
+    carpeta_version.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    destino = (
+        carpeta_version
+        / OUTPUT_NAME
+    )
+
+    # Como la carpeta es nueva, write_text no pisa ningún archivo en uso.
+    destino.write_text(
+        nuevo,
+        encoding="utf-8"
     )
 
     assets = data / "assets"
-    assets.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(banner, carpeta_updates / BANNER_NAME)
-    shutil.copy2(banner, assets / BANNER_NAME)
-
-    py_compile.compile(str(destino), doraise=True)
-
-    subprocess.Popen(
-        [sys.executable, str(destino)],
-        cwd=str(carpeta_updates),
+    assets.mkdir(
+        parents=True,
+        exist_ok=True
     )
 
-    time.sleep(1.8)
-    _cerrar_padre_tras_arranque(parent_pid)
+    banner_local = (
+        carpeta_version
+        / BANNER_NAME
+    )
+
+    # Evitar copiar sobre el mismo archivo si el banner ya está ahí.
+    try:
+        if banner.resolve() != banner_local.resolve():
+            shutil.copy2(
+                banner,
+                banner_local
+            )
+    except Exception:
+        shutil.copy2(
+            banner,
+            banner_local
+        )
+
+    # Cache persistente del banner: solo copiar si el destino no es el origen.
+    banner_cache = (
+        assets
+        / BANNER_NAME
+    )
+    try:
+        if banner.resolve() != banner_cache.resolve():
+            shutil.copy2(
+                banner,
+                banner_cache
+            )
+    except Exception:
+        pass
+
+    py_compile.compile(
+        str(destino),
+        doraise=True
+    )
+
+    proceso_nuevo = subprocess.Popen(
+        [
+            sys.executable,
+            str(destino),
+        ],
+        cwd=str(
+            carpeta_version
+        ),
+    )
+
+    # Dar tiempo a la nueva versión a abrir antes de cerrar la anterior.
+    time.sleep(
+        2.2
+    )
+
+    if proceso_nuevo.poll() is not None:
+        raise RuntimeError(
+            "La V89.3 se cerró durante el arranque. "
+            "La versión anterior se mantiene abierta."
+        )
+
+    _cerrar_padre_tras_arranque(
+        parent_pid
+    )
+
     return destino
 
 
@@ -961,7 +1039,7 @@ if __name__ == "__main__":
             root = tk.Tk()
             root.withdraw()
             messagebox.showerror(
-                "DIAGPROG5 · Actualización V89.2",
+                "DIAGPROG5 · Actualización V89.3",
                 "No pude completar la actualización:\n\n" + str(e),
             )
             root.destroy()
