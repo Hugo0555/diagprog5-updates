@@ -5311,6 +5311,99 @@ def _v102_eliminar_con_motor_existente'''
             1
         )
 
+
+    # ---- Rotación segura con títulos duplicados ----
+    viejo_rotar = '''def _v102_rotar_una_vez():
+    if not _v102_rotacion_activa():
+        return False, (
+            "Rotación desactivada."
+        )
+
+    candidatos = _v102_candidatos_locales()
+
+    if not candidatos:
+        return False, (
+            "No hay candidatos seguros elegibles."
+        )
+
+    candidato = candidatos[0]
+
+    ok, detalle = _v102_eliminar_en_wallapop(
+        candidato
+    )
+'''
+
+    nuevo_rotar = '''def _v102_rotar_una_vez():
+    if not _v102_rotacion_activa():
+        return False, (
+            "Rotación desactivada."
+        )
+
+    candidatos = _v102_candidatos_locales()
+
+    if not candidatos:
+        return False, (
+            "No hay candidatos seguros elegibles."
+        )
+
+    # Si varios anuncios comparten título y ninguno tiene URL conocida,
+    # no borrar a ciegas. Preferimos el candidato más antiguo identificable.
+    conteo_titulos = {}
+
+    for _cand in candidatos:
+        _t = _v102_normalizar_texto(
+            _v102_titulo_candidato(
+                _cand
+            )
+        )
+
+        if _t:
+            conteo_titulos[_t] = (
+                conteo_titulos.get(
+                    _t,
+                    0
+                )
+                + 1
+            )
+
+    candidato = None
+
+    for _cand in candidatos:
+        _t = _v102_normalizar_texto(
+            _v102_titulo_candidato(
+                _cand
+            )
+        )
+
+        _url = _v102_url_candidato(
+            _cand
+        )
+
+        if _url or conteo_titulos.get(
+            _t,
+            0
+        ) <= 1:
+            candidato = _cand
+            break
+
+    if candidato is None:
+        return False, (
+            "Los candidatos más antiguos tienen títulos duplicados y no "
+            "hay URL suficiente para distinguirlos con seguridad."
+        )
+
+    ok, detalle = _v102_eliminar_en_wallapop(
+        candidato
+    )
+'''
+
+    if viejo_rotar in texto:
+        texto = texto.replace(
+            viejo_rotar,
+            nuevo_rotar,
+            1
+        )
+
     # ---- Continuar: fallback JS más tolerante para Shadow DOM ----
     old_cont = '''    return False
 
