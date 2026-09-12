@@ -1,9 +1,9 @@
 {
-  "version": "89.3",
+  "version": "90",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V89_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V90_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V89.3 ADMIN · Instalación en carpeta de versión nueva para eliminar WinError 32. Verifica que la nueva versión permanezca abierta antes de cerrar la anterior. Mantiene rotación, migración, banner, interfaz y fluidez."
+  "notes": "DIAGPROG5 V90 ADMIN · Motor de rotación robusto: al detectar LIMITE_CATALOGO selecciona el candidato seguro más antiguo, intenta eliminarlo en Wallapop, actualiza el registro local, espera a que se libere el hueco y reintenta el mismo anuncio. Añade log rotacion_v90.log y conserva banner/interfaz/fluidez."
 }
