@@ -1,9 +1,9 @@
 {
-  "version": "102",
+  "version": "102.1",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V102_BOOTSTRAP.py",
-  "download_url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/DIAGPROG5_V102_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V102_1_BOOTSTRAP.py",
+  "download_url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/DIAGPROG5_V102_1_BOOTSTRAP.py",
   "sha256": "",
-  "notes": "DIAGPROG5 V102 ADMIN · Revisión consolidada basada en el ZIP real: limpia motores/runtime/capacidad antiguos acumulados, conserva una sola capa actual, mantiene la capacidad de cola consolidada, añade fallback del updater a GitHub, rechaza URLs falsas como la portada de Wallapop, navega por Tú > Productos para encontrar candidatos, detecta la papelera también cuando es un icono sin texto, guarda captura+HTML cuando la interfaz cambia, reutiliza el conector CDP estable del bot y refuerza el botón Continuar dentro de Shadow DOM."
+  "notes": "DIAGPROG5 V102.1 ADMIN · Mantiene la interfaz y funciones de V102. Corrige la rotación real: usa la ruta que ya demuestra la Prueba de rotación (Tú > Productos), localiza la tarjeta exacta del candidato, busca papelera/borrar dentro de esa tarjeta, abre su menú si hace falta, confirma el borrado y verifica que el anuncio desaparezca antes de marcarlo como eliminado y reintentar la publicación. Conserva fallback al motor V102 y guarda diagnóstico exacto si Wallapop vuelve a cambiar."
 }
