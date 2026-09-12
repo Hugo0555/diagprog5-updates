@@ -1,9 +1,9 @@
 {
-  "version": "98",
+  "version": "99",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V98_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V99_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V98 ADMIN · La capacidad de la cola ahora aparece como botón visible junto a «Añadir anuncio actual». Muestra uso/límite, abre un diálogo para elegir 1–5000, guarda el valor y bloquea nuevas altas cuando la cola está llena. Mantiene rotación, diagnóstico, banner, interfaz y fluidez."
+  "notes": "DIAGPROG5 V99 ADMIN · Corrige el falso «cola llena» y elimina límites heredados fijos de 10 anuncios dentro de las funciones de cola/lotes. La capacidad configurada pasa a ser la referencia real (1–5000). Mantiene el botón Capacidad, rotación, diagnóstico, banner, interfaz y fluidez."
 }
