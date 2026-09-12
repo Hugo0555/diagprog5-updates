@@ -100,6 +100,9 @@ def _es_fuente_completa(path):
         if "bootstrap" in nombre:
             return False
         t = _leer_texto(p)
+        # La fuente es la versión COMPLETA que ya tiene instalada el usuario.
+        # No debe exigirse que contenga las funciones nuevas de V96:
+        # precisamente este bootstrap es quien las añade.
         requisitos = (
             "DIAGPROG5",
             "customtkinter",
@@ -108,8 +111,6 @@ def _es_fuente_completa(path):
             "banner_dp5_limpio_v15.png",
             "def instalar_actualizacion_admin",
             "ventana.mainloop()",
-        "V96 · CAPACIDAD CONFIGURABLE DE COLA",
-        "_v96_instalar_control_capacidad",
         )
         return all(x in t for x in requisitos)
     except Exception:
@@ -4097,8 +4098,8 @@ def main():
     encontrados = _candidatos_fuente()
     if not encontrados:
         raise RuntimeError(
-            "No encontré una instalación completa de DIAGPROG5 para actualizar. "
-            "Conserva abierta una versión completa de DIAGPROG5 y vuelve a pulsar Actualizar."
+            "No encontré una base completa compatible de DIAGPROG5. "
+            "El actualizador buscó automáticamente en las versiones instaladas y carpetas de datos."
         )
 
     _, _, _, fuente, texto, version_fuente = encontrados[0]
