@@ -5,6 +5,8 @@ on:
     branches:
       - main
     paths:
+      - "diagprog5-update.json"
+      - "bot_wallapop_profesional_v*_ADMIN*.py"
       - "cloudflare/**"
       - "wrangler.toml"
       - ".github/workflows/deploy-updater.yml"
@@ -21,6 +23,114 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Build Worker from manifest
+        shell: python
+        run: |
+          import hashlib
+          import json
+          from pathlib import Path
+
+          manifest_path = Path("diagprog5-update.json")
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+          filename = str(manifest.get("filename", "")).strip()
+          source = ""
+          sha256 = ""
+          download_ready = False
+
+          if filename:
+              p = Path(filename)
+              if p.exists() and p.is_file():
+                  source = p.read_text(encoding="utf-8")
+                  sha256 = hashlib.sha256(p.read_bytes()).hexdigest()
+                  download_ready = True
+
+          version_payload = {
+              "ok": True,
+              "app": "DIAGPROG5",
+              "channel": manifest.get("channel", "admin"),
+              "version": str(manifest.get("version", "")),
+              "update_available": True,
+              "required": bool(manifest.get("required", False)),
+              "filename": filename if download_ready else "",
+              "download_url": "__ORIGIN__/download" if download_ready else "",
+              "sha256": sha256 if download_ready else "",
+              "notes": manifest.get("notes", ""),
+          }
+
+          payload_json = json.dumps(version_payload, ensure_ascii=False)
+          source_json = json.dumps(source, ensure_ascii=False)
+          filename_json = json.dumps(filename, ensure_ascii=False)
+
+          worker = f"""
+          const VERSION_PAYLOAD = {payload_json};
+          const BOT_SOURCE = {source_json};
+          const BOT_FILENAME = {filename_json};
+
+          function jsonResponse(data, status = 200) {{
+            return new Response(JSON.stringify(data, null, 2), {{
+              status,
+              headers: {{
+                "Content-Type": "application/json; charset=utf-8",
+                "Cache-Control": "no-store"
+              }}
+            }});
+          }}
+
+          export default {{
+            async fetch(request) {{
+              const url = new URL(request.url);
+
+              if (url.pathname === "/" || url.pathname === "/version") {{
+                const payload = {{ ...VERSION_PAYLOAD }};
+                if (payload.download_url) {{
+                  payload.download_url = payload.download_url.replace(
+                    "__ORIGIN__",
+                    url.origin
+                  );
+                }}
+                return jsonResponse(payload);
+              }}
+
+              if (url.pathname === "/health") {{
+                return jsonResponse({{
+                  ok: true,
+                  service: "diagprog5-updater",
+                  status: "online",
+                  version: VERSION_PAYLOAD.version,
+                  download_ready: Boolean(BOT_SOURCE)
+                }});
+              }}
+
+              if (url.pathname === "/download") {{
+                if (!BOT_SOURCE || !BOT_FILENAME) {{
+                  return jsonResponse({{
+                    ok: false,
+                    error: "La versión está anunciada pero el archivo aún no está publicado."
+                  }}, 409);
+                }}
+
+                return new Response(BOT_SOURCE, {{
+                  status: 200,
+                  headers: {{
+                    "Content-Type": "text/x-python; charset=utf-8",
+                    "Content-Disposition": 'attachment; filename="' + BOT_FILENAME + '"',
+                    "Cache-Control": "no-store"
+                  }}
+                }});
+              }}
+
+              return jsonResponse({{
+                ok: false,
+                error: "Ruta no encontrada"
+              }}, 404);
+            }}
+          }};
+          """
+
+          Path("cloudflare").mkdir(exist_ok=True)
+          Path("cloudflare/worker.js").write_text(worker, encoding="utf-8")
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -34,17 +144,3 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: "a916c59112605a7c02c3fa00f07efc7b"
-
-      - name: Configure GitHub read token in Worker
-        run: printf "%s" "$GITHUB_READ_TOKEN" | wrangler secret put GITHUB_TOKEN
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: "a916c59112605a7c02c3fa00f07efc7b"
-          GITHUB_READ_TOKEN: ${{ secrets.GITHUB_READ_TOKEN }}
-
-      - name: Configure update key in Worker
-        run: printf "%s" "$UPDATE_KEY" | wrangler secret put UPDATE_KEY
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: "a916c59112605a7c02c3fa00f07efc7b"
-          UPDATE_KEY: ${{ secrets.UPDATE_KEY }}
