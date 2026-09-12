@@ -8,8 +8,8 @@ import subprocess
 import py_compile
 import traceback
 
-TARGET_VERSION = "89.1"
-OUTPUT_NAME = "bot_wallapop_profesional_v89_1_ADMIN_ROTACION_FIX.py"
+TARGET_VERSION = "89.2"
+OUTPUT_NAME = "bot_wallapop_profesional_v89_2_ADMIN_ROTACION_FIX.py"
 BANNER_NAME = "banner_dp5_limpio_v15.png"
 
 
@@ -292,7 +292,7 @@ def _capa_fluidez():
     return """
 
 # =========================================================
-# V89.1 · CAPA DE FLUIDEZ DE INTERFAZ
+# V89.2 · CAPA DE FLUIDEZ DE INTERFAZ
 # =========================================================
 # Agrupa refrescos repetidos que ocurren casi al mismo tiempo.
 try:
@@ -331,13 +331,13 @@ try:
                 return _v89_dashboard_original()
 
 except Exception as _e_v89_ui:
-    print("[V89.1] Capa de fluidez dashboard no aplicada:", _e_v89_ui)
+    print("[V89.2] Capa de fluidez dashboard no aplicada:", _e_v89_ui)
 
 """
 
 
 def _inyectar_fluidez(texto):
-    if "V89.1 · CAPA DE FLUIDEZ DE INTERFAZ" in texto:
+    if "V89.2 · CAPA DE FLUIDEZ DE INTERFAZ" in texto:
         return texto
     marker = "actualizar_menu_lotes()\n\ntry:\n    ventana.after(\n        5000,\n        _programar_autoguardado_borrador\n    )"
     if marker in texto:
@@ -350,7 +350,7 @@ def _hacer_comprobacion_update_inicio_no_bloqueante(texto):
     fin = texto.find("# Autochequeo del creador al arrancar.", inicio)
     if inicio == -1 or fin == -1:
         return texto
-    nuevo = """# Comprobación silenciosa del servidor de actualizaciones (V89, no bloqueante).
+    nuevo = """# Comprobación silenciosa del servidor de actualizaciones (V89.2, no bloqueante).
 def _v89_comprobar_updates_en_segundo_plano():
     def _trabajo():
         try:
@@ -848,7 +848,7 @@ def _migrar_publicados_legacy():
 ''',
         '''            (
                 "No hay candidatos seguros registrados por DIAGPROG5. "
-                "V89 ya migró automáticamente los publicados.json antiguos. "
+                "V89.2 ya migró automáticamente los publicados.json antiguos. "
                 "Si sigue en 0, esos anuncios fueron publicados antes de que "
                 "DIAGPROG5 los registrara y no se borrarán automáticamente."
             )
@@ -868,7 +868,7 @@ def construir_v89(fuente_path, texto):
     nuevo = _hacer_comprobacion_update_inicio_no_bloqueante(nuevo)
 
     requisitos = [
-        'return "89"',
+        'return "' + TARGET_VERSION + '"',
         "banner_dp5_limpio_v15.png",
         "sidebar = ctk.CTkFrame",
         "Centro de actualizaciones",
@@ -878,7 +878,10 @@ def construir_v89(fuente_path, texto):
     faltan = [x for x in requisitos if x not in nuevo]
     if faltan:
         raise RuntimeError(
-            "La base encontrada no es válida para V89. Falta: " + ", ".join(faltan)
+            "La base transformada no es válida para V"
+            + TARGET_VERSION
+            + ". Falta: "
+            + ", ".join(faltan)
         )
     return nuevo
 
@@ -906,7 +909,7 @@ def main():
     if not encontrados:
         raise RuntimeError(
             "No encontré una instalación completa de DIAGPROG5 para actualizar. "
-            "Conserva abierta tu V87 y vuelve a pulsar Actualizar."
+            "Conserva abierta una versión completa de DIAGPROG5 y vuelve a pulsar Actualizar."
         )
 
     _, _, _, fuente, texto, version_fuente = encontrados[0]
@@ -958,7 +961,7 @@ if __name__ == "__main__":
             root = tk.Tk()
             root.withdraw()
             messagebox.showerror(
-                "DIAGPROG5 · Actualización V89.1",
+                "DIAGPROG5 · Actualización V89.2",
                 "No pude completar la actualización:\n\n" + str(e),
             )
             root.destroy()
