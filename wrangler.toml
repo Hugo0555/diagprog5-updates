@@ -1,0 +1,5 @@
+name = "diagprog5-updater"
+main = "cloudflare/worker.js"
+compatibility_date = "2026-09-12"
+account_id = "a916c59112605a7c02c3fa00f07efc7b"
+workers_dev = true
