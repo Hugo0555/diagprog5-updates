@@ -1,9 +1,9 @@
 {
-  "version": "90",
+  "version": "91",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V90_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V91_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V90 ADMIN · Motor de rotación robusto: al detectar LIMITE_CATALOGO selecciona el candidato seguro más antiguo, intenta eliminarlo en Wallapop, actualiza el registro local, espera a que se libere el hueco y reintenta el mismo anuncio. Añade log rotacion_v90.log y conserva banner/interfaz/fluidez."
+  "notes": "DIAGPROG5 V91 ADMIN · Corrige el disparo real de rotación: detecta LIMITE_CATALOGO buscando en todo el item de cola, prefiere la base local más reciente, reutiliza el eliminador interno de DIAGPROG5 si existe y deja mensajes completos/útiles de rotación. Mantiene 57 candidatos, protección, banner, interfaz y fluidez."
 }
