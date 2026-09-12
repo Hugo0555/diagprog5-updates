@@ -8,9 +8,70 @@ import subprocess
 import py_compile
 import traceback
 
-TARGET_VERSION = "89"
-OUTPUT_NAME = "bot_wallapop_profesional_v89_ADMIN_ROTACION_FIX.py"
+TARGET_VERSION = "89.1"
+OUTPUT_NAME = "bot_wallapop_profesional_v89_1_ADMIN_ROTACION_FIX.py"
 BANNER_NAME = "banner_dp5_limpio_v15.png"
+
+
+def _escribir_texto_con_reintentos(path, texto, intentos=8, espera=0.18):
+    path = Path(path)
+    ultimo = None
+
+    for i in range(max(1, int(intentos))):
+        try:
+            path.parent.mkdir(
+                parents=True,
+                exist_ok=True
+            )
+
+            temporal = path.with_name(
+                path.name
+                + ".tmp."
+                + str(os.getpid())
+            )
+
+            temporal.write_text(
+                texto,
+                encoding="utf-8"
+            )
+
+            try:
+                os.replace(
+                    str(temporal),
+                    str(path)
+                )
+            except PermissionError:
+                # En Windows algunos editores/antivirus mantienen el archivo
+                # abierto unos milisegundos. Reintentamos sin romper update.
+                try:
+                    if path.exists():
+                        path.unlink()
+                    temporal.replace(
+                        path
+                    )
+                except Exception:
+                    raise
+
+            return True
+
+        except PermissionError as e:
+            ultimo = e
+            time.sleep(
+                espera * (i + 1)
+            )
+        except OSError as e:
+            ultimo = e
+            if getattr(e, "winerror", None) == 32:
+                time.sleep(
+                    espera * (i + 1)
+                )
+                continue
+            raise
+
+    if ultimo:
+        raise ultimo
+
+    return False
 
 
 def _leer_texto(path):
@@ -231,7 +292,7 @@ def _capa_fluidez():
     return """
 
 # =========================================================
-# V89 · CAPA DE FLUIDEZ DE INTERFAZ
+# V89.1 · CAPA DE FLUIDEZ DE INTERFAZ
 # =========================================================
 # Agrupa refrescos repetidos que ocurren casi al mismo tiempo.
 try:
@@ -270,13 +331,13 @@ try:
                 return _v89_dashboard_original()
 
 except Exception as _e_v89_ui:
-    print("[V89] Capa de fluidez dashboard no aplicada:", _e_v89_ui)
+    print("[V89.1] Capa de fluidez dashboard no aplicada:", _e_v89_ui)
 
 """
 
 
 def _inyectar_fluidez(texto):
-    if "V89 · CAPA DE FLUIDEZ DE INTERFAZ" in texto:
+    if "V89.1 · CAPA DE FLUIDEZ DE INTERFAZ" in texto:
         return texto
     marker = "actualizar_menu_lotes()\n\ntry:\n    ventana.after(\n        5000,\n        _programar_autoguardado_borrador\n    )"
     if marker in texto:
@@ -499,14 +560,63 @@ def _migrar_publicados_legacy():
             pass
 
     try:
-        destino.write_text(
-            json.dumps(
-                combinados,
-                ensure_ascii=False,
-                indent=4
-            ),
-            encoding="utf-8"
+        contenido_publicados = json.dumps(
+            combinados,
+            ensure_ascii=False,
+            indent=4
         )
+
+        ultimo_error = None
+
+        for _intento in range(8):
+            try:
+                destino.parent.mkdir(
+                    parents=True,
+                    exist_ok=True
+                )
+
+                temporal = destino.with_name(
+                    destino.name
+                    + ".tmp."
+                    + str(os.getpid())
+                )
+
+                temporal.write_text(
+                    contenido_publicados,
+                    encoding="utf-8"
+                )
+
+                os.replace(
+                    str(temporal),
+                    str(destino)
+                )
+
+                ultimo_error = None
+                break
+
+            except OSError as e:
+                ultimo_error = e
+
+                if (
+                    isinstance(e, PermissionError)
+                    or getattr(
+                        e,
+                        "winerror",
+                        None
+                    ) == 32
+                ):
+                    time.sleep(
+                        0.15 * (_intento + 1)
+                    )
+                    continue
+
+                break
+
+        if ultimo_error is not None:
+            print(
+                "[ROTACION] No pude migrar publicados.json ahora:",
+                ultimo_error
+            )
     except Exception:
         pass
 '''
@@ -564,9 +674,42 @@ def _migrar_publicados_legacy():
         encoding="utf-8"
     )
 
-    temporal.replace(
-        ruta_publicados
-    )
+    _ultimo_error_publicados = None
+
+    for _intento_publicados in range(8):
+        try:
+            os.replace(
+                str(temporal),
+                str(ruta_publicados)
+            )
+
+            _ultimo_error_publicados = None
+            break
+
+        except OSError as e:
+            _ultimo_error_publicados = e
+
+            if (
+                isinstance(e, PermissionError)
+                or getattr(
+                    e,
+                    "winerror",
+                    None
+                ) == 32
+            ):
+                time.sleep(
+                    0.15 * (_intento_publicados + 1)
+                )
+                continue
+
+            break
+
+    if _ultimo_error_publicados is not None:
+        # No bloquear el bot por un lock temporal de Windows.
+        print(
+            "[PUBLICADOS] Archivo ocupado temporalmente:",
+            _ultimo_error_publicados
+        )
 '''
     texto = texto.replace(
         viejo_guardar,
@@ -783,7 +926,10 @@ def main():
     carpeta_updates.mkdir(parents=True, exist_ok=True)
 
     destino = carpeta_updates / OUTPUT_NAME
-    destino.write_text(nuevo, encoding="utf-8")
+    _escribir_texto_con_reintentos(
+        destino,
+        nuevo
+    )
 
     assets = data / "assets"
     assets.mkdir(parents=True, exist_ok=True)
@@ -812,7 +958,7 @@ if __name__ == "__main__":
             root = tk.Tk()
             root.withdraw()
             messagebox.showerror(
-                "DIAGPROG5 · Actualización V89",
+                "DIAGPROG5 · Actualización V89.1",
                 "No pude completar la actualización:\n\n" + str(e),
             )
             root.destroy()
