@@ -1,9 +1,9 @@
 {
-  "version": "95",
+  "version": "96",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V95_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V96_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V95 ADMIN · Pulido de rotación: corrige el guardado de URL aunque la base no tenga guardar_publicados(), amplía la detección del botón Eliminar/Borrar usando texto y atributos accesibles, registra controles visibles cuando Wallapop cambia su interfaz y mejora la confirmación de borrado. Mantiene un único motor, diagnóstico total, banner, interfaz y fluidez."
+  "notes": "DIAGPROG5 V96 ADMIN · Añade en la sección Cola un control para elegir la capacidad máxima entre 1 y 5000 anuncios, guardarla de forma persistente y ver el uso actual. Bloquea nuevas altas al llegar al límite y respeta la capacidad al añadir lotes. Mantiene rotación, diagnóstico, banner, interfaz y fluidez."
 }
