@@ -620,7 +620,10 @@ def main():
                     )
                 )
 
-                return target
+                # El bootstrap/versión anterior debe terminar al lanzar la nueva.
+                # os._exit evita que quede una segunda ventana/proceso vivo.
+                import os
+                os._exit(0)
 
         except Exception:
             pass
@@ -700,7 +703,10 @@ def main():
         )
     )
 
-    return target
+    # La nueva versión ya está arrancada: cerrar completamente el proceso
+    # instalador/anterior para que solo quede una ventana de DIAGPROG5.
+    import os
+    os._exit(0)
 
 
 if __name__ == "__main__":
