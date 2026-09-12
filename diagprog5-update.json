@@ -1,9 +1,9 @@
 {
-  "version": "96",
+  "version": "96.1",
   "channel": "admin",
   "required": false,
   "filename": "DIAGPROG5_V96_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V96 ADMIN · Añade en la sección Cola un control para elegir la capacidad máxima entre 1 y 5000 anuncios, guardarla de forma persistente y ver el uso actual. Bloquea nuevas altas al llegar al límite y respeta la capacidad al añadir lotes. Mantiene rotación, diagnóstico, banner, interfaz y fluidez."
+  "notes": "DIAGPROG5 V96.1 ADMIN · Corrige el fallo del instalador V96 que rechazaba por error las versiones completas anteriores al exigir que ya contuvieran la función nueva de capacidad. Añade capacidad configurable de cola entre 1 y 5000, persistente y con indicador de uso. Mantiene rotación, diagnóstico, banner, interfaz y fluidez."
 }
