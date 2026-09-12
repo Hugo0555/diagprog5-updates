@@ -1,9 +1,9 @@
 {
-  "version": "87",
+  "version": "87.1",
   "channel": "admin",
   "required": false,
   "filename": "bot_wallapop_profesional_v87_ADMIN_AUTOUPDATE_REAL.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V87 ADMIN · Actualizador automático preparado. La descarga se activará en cuanto el archivo V87 esté publicado en este repositorio."
+  "notes": "DIAGPROG5 V87 ADMIN · Paquete corregido. Esta revisión fuerza una descarga nueva para sustituir la copia V87 defectuosa."
 }
