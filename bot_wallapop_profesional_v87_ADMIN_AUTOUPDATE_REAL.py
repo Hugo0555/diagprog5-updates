@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys, subprocess, py_compile, json, time, traceback
 
-OUTPUT_NAME = "bot_wallapop_profesional_v87_ADMIN_AUTOUPDATE_REAL.py"
+OUTPUT_NAME = "bot_wallapop_profesional_v87_2_ADMIN_AUTOUPDATE_REAL.py"
 
 HELPERS = r'''
 def _registrar_actualizacion_historial(
@@ -304,7 +304,7 @@ def construir_v87(original):
     text = require_replace(
         text,
         'def version_actual_bot():\n    return "86"',
-        'def version_actual_bot():\n    return "87"',
+        'def version_actual_bot():\n    return "87.2"',
         "version_actual_bot"
     )
 
@@ -563,12 +563,12 @@ ARCHIVO_HISTORIAL_ACTUALIZACIONES = os.path.join(
 
     text = text.replace(
         "DIAGPROG5 - WALLAPOP BOT (ADMIN) · V86",
-        "DIAGPROG5 - WALLAPOP BOT (ADMIN) · V87"
+        "DIAGPROG5 - WALLAPOP BOT (ADMIN) · V87.2"
     )
 
     text = text.replace(
         "DIAGPROG5 · WALLAPOP BOT · V86",
-        "DIAGPROG5 · WALLAPOP BOT · V87"
+        "DIAGPROG5 · WALLAPOP BOT · V87.2"
     )
 
     text = text.replace(
@@ -602,7 +602,7 @@ def main():
 
             if (
                 'def version_actual_bot()' in existente
-                and 'return "87"' in existente
+                and 'return "87.2"' in existente
                 and "DIAGPROG5" in existente
             ):
                 py_compile.compile(
@@ -654,6 +654,8 @@ def main():
         "banner_dp5_limpio_v15.png" not in updated
         or "UI V86 · DISEÑO APROBADO" not in updated
         or "ACTUALIZACIONES · ADMIN" not in updated
+        or "menu_buttons" not in updated
+        or "banner_dp5_limpio_v15.png" not in updated
     ):
         raise RuntimeError(
             "La V86 encontrada no contiene la interfaz/banner aprobados."
@@ -664,10 +666,24 @@ def main():
         encoding="utf-8"
     )
 
-    copiar_banner_interfaz(
+    banner_copiado = copiar_banner_interfaz(
         source,
         target.parent
     )
+
+    # Refuerzo visual: el banner también se deja en el directorio de trabajo
+    # por si la UI lo resuelve de forma relativa.
+    try:
+        if banner_copiado is not None:
+            cwd_banner = Path.cwd() / "banner_dp5_limpio_v15.png"
+            if cwd_banner.resolve() != banner_copiado.resolve():
+                import shutil
+                shutil.copy2(
+                    banner_copiado,
+                    cwd_banner
+                )
+    except Exception:
+        pass
 
     py_compile.compile(
         str(target),
