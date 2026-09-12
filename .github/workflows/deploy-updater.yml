@@ -1,0 +1,50 @@
+name: Deploy DIAGPROG5 updater
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "cloudflare/**"
+      - "wrangler.toml"
+      - ".github/workflows/deploy-updater.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Wrangler
+        run: npm install --global wrangler@latest
+
+      - name: Deploy Worker
+        run: wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: "a916c59112605a7c02c3fa00f07efc7b"
+
+      - name: Configure GitHub read token in Worker
+        run: printf "%s" "$GITHUB_READ_TOKEN" | wrangler secret put GITHUB_TOKEN
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: "a916c59112605a7c02c3fa00f07efc7b"
+          GITHUB_READ_TOKEN: ${{ secrets.GITHUB_READ_TOKEN }}
+
+      - name: Configure update key in Worker
+        run: printf "%s" "$UPDATE_KEY" | wrangler secret put UPDATE_KEY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: "a916c59112605a7c02c3fa00f07efc7b"
+          UPDATE_KEY: ${{ secrets.UPDATE_KEY }}
