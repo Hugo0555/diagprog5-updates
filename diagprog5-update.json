@@ -1,9 +1,9 @@
 {
-  "version": "102.1",
+  "version": "103",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V102_1_BOOTSTRAP.py",
-  "download_url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/DIAGPROG5_V102_1_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V103_BOOTSTRAP.py",
+  "download_url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/DIAGPROG5_V103_BOOTSTRAP.py",
   "sha256": "",
-  "notes": "DIAGPROG5 V102.1 ADMIN · Mantiene la interfaz y funciones de V102. Corrige la rotación real: usa la ruta que ya demuestra la Prueba de rotación (Tú > Productos), localiza la tarjeta exacta del candidato, busca papelera/borrar dentro de esa tarjeta, abre su menú si hace falta, confirma el borrado y verifica que el anuncio desaparezca antes de marcarlo como eliminado y reintentar la publicación. Conserva fallback al motor V102 y guarda diagnóstico exacto si Wallapop vuelve a cambiar."
+  "notes": "DIAGPROG5 V103 ADMIN · Rotación rehecha sobre el flujo web real: reutiliza Productos, abre el detalle exacto del candidato usando el enlace asociado al título sin exigir /item/, busca la papelera dentro del artículo con más atributos/iconos, confirma el borrado y verifica que el anuncio desaparezca. Si Wallapop cambia de nuevo, guarda detalle.html, detalle.png y controles.txt en diagnosticos_rotacion para localizar el selector exacto. Conserva capacidad configurable, updater, diagnóstico, banner e interfaz."
 }
