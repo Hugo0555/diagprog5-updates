@@ -3,7 +3,7 @@
   "channel": "admin",
   "required": false,
   "filename": "DIAGPROG5_V100_BOOTSTRAP.py",
-  "download_url": "",
+  "download_url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/DIAGPROG5_V100_BOOTSTRAP.py",
   "sha256": "",
-  "notes": "DIAGPROG5 V100 ADMIN · Corrección consolidada basada en tu instalación real: capacidad_cola.json pasa a ser la fuente de verdad, se elimina el MAX_COLA=10 heredado, se corrigen lotes que seguían limitados a 10, carga/duplicado/generación/dashboard usan la capacidad efectiva, el ajuste admite hasta 5000 y el botón Capacidad sincroniza también la configuración antigua. Mantiene rotación, diagnóstico, banner, interfaz y fluidez."
+  "notes": "DIAGPROG5 V100 ADMIN · Corrección consolidada de capacidad de cola y recuperación del actualizador. capacidad_cola.json es la fuente de verdad; elimina límites heredados de 10 y sincroniza carga, lotes, duplicado, generación, dashboard y configuración."
 }
