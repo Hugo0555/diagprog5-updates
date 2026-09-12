@@ -1,9 +1,9 @@
 {
-  "version": "89.1",
+  "version": "89.2",
   "channel": "admin",
   "required": false,
   "filename": "DIAGPROG5_V89_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V89.1 ADMIN · Corrige WinError 32: reintenta escrituras/renombres cuando Windows, antivirus o el propio bot mantienen un archivo abierto temporalmente. Mantiene rotación, migración, banner e interfaz."
+  "notes": "DIAGPROG5 V89.2 ADMIN · Corrección del actualizador: validación dinámica de versión, mantiene fixes de rotación, publicados.json persistente, migración, banner, interfaz y fluidez."
 }
