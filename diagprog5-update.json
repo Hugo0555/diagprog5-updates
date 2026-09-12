@@ -1,9 +1,9 @@
 {
-  "version": "101",
+  "version": "102",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V101_BOOTSTRAP.py",
-  "download_url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/DIAGPROG5_V101_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V102_BOOTSTRAP.py",
+  "download_url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/DIAGPROG5_V102_BOOTSTRAP.py",
   "sha256": "",
-  "notes": "DIAGPROG5 V101 ADMIN · La capacidad de cola queda consolidada desde V100. Corrige el fallo de rotación observado en el diagnóstico: BrowserType.connect_over_cdp agotaba 15000 ms pese a alcanzar el websocket. La rotación usa ahora 60000 ms de margen CDP. Mantiene capacidad configurable, interfaz, banner, diagnóstico y resto de correcciones."
+  "notes": "DIAGPROG5 V102 ADMIN · Revisión consolidada basada en el ZIP real: limpia motores/runtime/capacidad antiguos acumulados, conserva una sola capa actual, mantiene la capacidad de cola consolidada, añade fallback del updater a GitHub, rechaza URLs falsas como la portada de Wallapop, navega por Tú > Productos para encontrar candidatos, detecta la papelera también cuando es un icono sin texto, guarda captura+HTML cuando la interfaz cambia, reutiliza el conector CDP estable del bot y refuerza el botón Continuar dentro de Shadow DOM."
 }
