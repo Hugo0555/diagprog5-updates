@@ -504,6 +504,43 @@ def main():
         __file__
     ).resolve()
 
+    target = (
+        here.parent
+        / OUTPUT_NAME
+    )
+
+    # Si V87 ya fue generada correctamente, no intentar reconstruirla otra vez.
+    if target.exists() and target.resolve() != here:
+        try:
+            existente = target.read_text(
+                encoding="utf-8"
+            )
+
+            if (
+                'def version_actual_bot()' in existente
+                and 'return "87"' in existente
+                and "DIAGPROG5" in existente
+            ):
+                py_compile.compile(
+                    str(target),
+                    doraise=True
+                )
+
+                subprocess.Popen(
+                    [
+                        sys.executable,
+                        str(target),
+                    ],
+                    cwd=str(
+                        target.parent
+                    )
+                )
+
+                return target
+
+        except Exception:
+            pass
+
     data_dir = here.parent.parent
 
     source = find_v86(
@@ -512,7 +549,7 @@ def main():
 
     if source is None:
         raise RuntimeError(
-            "No encontré el backup V86 creado por el actualizador."
+            "No encontré el backup V86 y tampoco existe una V87 válida ya instalada."
         )
 
     original = source.read_text(
