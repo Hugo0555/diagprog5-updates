@@ -1,9 +1,9 @@
 {
-  "version": "88",
+  "version": "89",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V88_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V89_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V88 ADMIN · Corrige definitivamente el banner y la actualización, cierra automáticamente la versión anterior y añade una capa de fluidez para reducir refrescos repetidos de la interfaz."
+  "notes": "DIAGPROG5 V89 ADMIN · Corrige la rotación automática: switches con autoguardado real, publicados.json persistente en AppData, migración de registros antiguos y diagnóstico UI/disco. Mantiene banner, interfaz y mejoras de fluidez."
 }
