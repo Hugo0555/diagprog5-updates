@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys, subprocess, py_compile, json, time, traceback
 
-OUTPUT_NAME = "bot_wallapop_profesional_v87_2_ADMIN_AUTOUPDATE_REAL.py"
+OUTPUT_NAME = "bot_wallapop_profesional_v87_3_ADMIN_AUTOUPDATE_REAL.py"
 
 HELPERS = r'''
 def _registrar_actualizacion_historial(
@@ -251,46 +251,101 @@ def find_v86(data_dir):
 
 def copiar_banner_interfaz(source, target_dir):
     """
-    Copia el banner aprobado junto a la nueva versión.
+    Localiza el banner real usado por DIAGPROG5 y lo copia junto a la nueva
+    versión. No permite continuar silenciosamente sin banner.
     """
     nombre = "banner_dp5_limpio_v15.png"
+
+    home = Path.home()
 
     candidatos = [
         source.parent / nombre,
         source.parent.parent / nombre,
         Path.cwd() / nombre,
+        target_dir / nombre,
+        home / nombre,
+        home / "Desktop" / nombre,
+        home / "Escritorio" / nombre,
+        home / "Downloads" / nombre,
+        home / "Descargas" / nombre,
+        home / "Documents" / nombre,
+        home / "Documentos" / nombre,
     ]
 
-    try:
-        candidatos += list(
-            source.parent.parent.rglob(
-                nombre
-            )
-        )
-    except Exception:
-        pass
+    # Buscar también en ubicaciones típicas de DIAGPROG5/WallapopBot.
+    for base in [
+        home / "Desktop",
+        home / "Escritorio",
+        home / "Downloads",
+        home / "Descargas",
+        home / "Documents",
+        home / "Documentos",
+    ]:
+        try:
+            if base.exists():
+                candidatos += list(
+                    base.rglob(
+                        nombre
+                    )
+                )
+        except Exception:
+            pass
+
+    # Último recurso: buscar dentro de la carpeta de datos y sus padres.
+    for base in [
+        source.parent.parent,
+        source.parent.parent.parent,
+    ]:
+        try:
+            if base.exists():
+                candidatos += list(
+                    base.rglob(
+                        nombre
+                    )
+                )
+        except Exception:
+            pass
+
+    vistos = set()
 
     for ruta in candidatos:
         try:
+            ruta = Path(ruta)
+
+            clave = str(
+                ruta.resolve()
+            )
+
+            if clave in vistos:
+                continue
+
+            vistos.add(
+                clave
+            )
+
             if ruta.is_file():
                 destino = (
                     target_dir
                     / nombre
                 )
 
+                import shutil
+
                 if (
                     not destino.exists()
                     or destino.stat().st_size
                     != ruta.stat().st_size
                 ):
-                    import shutil
-
                     shutil.copy2(
                         ruta,
                         destino
                     )
 
-                return destino
+                if (
+                    destino.exists()
+                    and destino.stat().st_size > 10000
+                ):
+                    return destino
 
         except Exception:
             pass
@@ -304,7 +359,7 @@ def construir_v87(original):
     text = require_replace(
         text,
         'def version_actual_bot():\n    return "86"',
-        'def version_actual_bot():\n    return "87.2"',
+        'def version_actual_bot():\n    return "87.3"',
         "version_actual_bot"
     )
 
@@ -563,12 +618,12 @@ ARCHIVO_HISTORIAL_ACTUALIZACIONES = os.path.join(
 
     text = text.replace(
         "DIAGPROG5 - WALLAPOP BOT (ADMIN) · V86",
-        "DIAGPROG5 - WALLAPOP BOT (ADMIN) · V87.2"
+        "DIAGPROG5 - WALLAPOP BOT (ADMIN) · V87.3"
     )
 
     text = text.replace(
         "DIAGPROG5 · WALLAPOP BOT · V86",
-        "DIAGPROG5 · WALLAPOP BOT · V87.2"
+        "DIAGPROG5 · WALLAPOP BOT · V87.3"
     )
 
     text = text.replace(
@@ -602,7 +657,7 @@ def main():
 
             if (
                 'def version_actual_bot()' in existente
-                and 'return "87.2"' in existente
+                and 'return "87.3"' in existente
                 and "DIAGPROG5" in existente
             ):
                 py_compile.compile(
@@ -673,6 +728,19 @@ def main():
         source,
         target.parent
     )
+
+    if banner_copiado is None:
+        try:
+            target.unlink(
+                missing_ok=True
+            )
+        except Exception:
+            pass
+
+        raise RuntimeError(
+            "No encontré banner_dp5_limpio_v15.png. "
+            "La actualización se ha cancelado para no abrir DIAGPROG5 sin su banner."
+        )
 
     # Refuerzo visual: el banner también se deja en el directorio de trabajo
     # por si la UI lo resuelve de forma relativa.
