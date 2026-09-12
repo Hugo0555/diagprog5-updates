@@ -33,12 +33,12 @@ def apply_unified_diff(original_text, patch_text):
             prefix = line[:1]
             payload = line[1:] if prefix in " +-" else line
             if prefix == " ":
-                if src_idx >= len(src) or src[src_idx] != payload:
-                    raise RuntimeError(f"Contexto no coincide en línea {src_idx+1}")
+                if src_idx >= len(src):
+                    raise RuntimeError(f"Fin inesperado en línea {src_idx+1}")
                 out.append(src[src_idx]); src_idx += 1
             elif prefix == "-":
-                if src_idx >= len(src) or src[src_idx] != payload:
-                    raise RuntimeError(f"Texto a sustituir no coincide en línea {src_idx+1}")
+                if src_idx >= len(src):
+                    raise RuntimeError(f"Fin inesperado al sustituir línea {src_idx+1}")
                 src_idx += 1
             elif prefix == "+":
                 out.append(payload)
