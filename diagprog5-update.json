@@ -1,9 +1,9 @@
 {
-  "version": "87.2",
+  "version": "87.3",
   "channel": "admin",
   "required": false,
   "filename": "bot_wallapop_profesional_v87_ADMIN_AUTOUPDATE_REAL.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V87.2 ADMIN · Corrección definitiva: instala como V87.2 y conserva el banner DP5 y la interfaz lateral aprobada."
+  "notes": "DIAGPROG5 V87.3 ADMIN · Corrección del banner: busca el banner DP5 real en las carpetas habituales, lo copia junto a la nueva versión y cancela la actualización si no puede conservarlo."
 }
