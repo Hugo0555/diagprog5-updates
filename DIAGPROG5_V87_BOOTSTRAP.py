@@ -179,6 +179,10 @@ def require_replace(text, old, new, label):
 
 
 def find_v86(data_dir):
+    """
+    Busca específicamente la V86 que contiene la interfaz aprobada.
+    Evita usar backups antiguos/sin banner.
+    """
     backups = data_dir / "backups_actualizaciones"
     candidates = []
 
@@ -187,27 +191,107 @@ def find_v86(data_dir):
             backups.glob("*.py")
         )
 
-    candidates = [
-        p for p in candidates
-        if p.is_file()
-    ]
+    # También buscar junto a la carpeta de datos, por si la copia válida
+    # quedó en una ubicación distinta durante una actualización anterior.
+    try:
+        candidates += list(
+            data_dir.rglob("*v86*.py")
+        )
+    except Exception:
+        pass
 
-    candidates.sort(
+    unicos = []
+    vistos = set()
+
+    for p in candidates:
+        try:
+            rp = p.resolve()
+        except Exception:
+            rp = p
+
+        if str(rp) in vistos:
+            continue
+
+        vistos.add(
+            str(rp)
+        )
+
+        if p.is_file():
+            unicos.append(
+                p
+            )
+
+    # Más reciente primero.
+    unicos.sort(
         key=lambda p: p.stat().st_mtime,
         reverse=True
     )
 
-    for p in candidates:
+    for p in unicos:
         try:
             t = p.read_text(
                 encoding="utf-8"
             )
 
+            # Exigimos tanto V86 como las marcas de la interfaz aprobada.
             if (
                 'return "86"' in t
                 and "DIAGPROG5" in t
+                and "banner_dp5_limpio_v15.png" in t
+                and "UI V86 · DISEÑO APROBADO" in t
+                and "ACTUALIZACIONES · ADMIN" in t
             ):
                 return p
+
+        except Exception:
+            pass
+
+    return None
+
+
+def copiar_banner_interfaz(source, target_dir):
+    """
+    Copia el banner aprobado junto a la nueva versión.
+    """
+    nombre = "banner_dp5_limpio_v15.png"
+
+    candidatos = [
+        source.parent / nombre,
+        source.parent.parent / nombre,
+        Path.cwd() / nombre,
+    ]
+
+    try:
+        candidatos += list(
+            source.parent.parent.rglob(
+                nombre
+            )
+        )
+    except Exception:
+        pass
+
+    for ruta in candidatos:
+        try:
+            if ruta.is_file():
+                destino = (
+                    target_dir
+                    / nombre
+                )
+
+                if (
+                    not destino.exists()
+                    or destino.stat().st_size
+                    != ruta.stat().st_size
+                ):
+                    import shutil
+
+                    shutil.copy2(
+                        ruta,
+                        destino
+                    )
+
+                return destino
+
         except Exception:
             pass
 
@@ -565,9 +649,24 @@ def main():
         / OUTPUT_NAME
     )
 
+    # Comprobación extra: nunca publicar una V87 sin la UI aprobada.
+    if (
+        "banner_dp5_limpio_v15.png" not in updated
+        or "UI V86 · DISEÑO APROBADO" not in updated
+        or "ACTUALIZACIONES · ADMIN" not in updated
+    ):
+        raise RuntimeError(
+            "La V86 encontrada no contiene la interfaz/banner aprobados."
+        )
+
     target.write_text(
         updated,
         encoding="utf-8"
+    )
+
+    copiar_banner_interfaz(
+        source,
+        target.parent
     )
 
     py_compile.compile(
