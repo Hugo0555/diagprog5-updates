@@ -1,9 +1,9 @@
 {
-  "version": "91",
+  "version": "92",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V91_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V92_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V91 ADMIN · Corrige el disparo real de rotación: detecta LIMITE_CATALOGO buscando en todo el item de cola, prefiere la base local más reciente, reutiliza el eliminador interno de DIAGPROG5 si existe y deja mensajes completos/útiles de rotación. Mantiene 57 candidatos, protección, banner, interfaz y fluidez."
+  "notes": "DIAGPROG5 V92 ADMIN · Diagnóstico total de rotación en una sola ventana: configuración, publicados, candidatos, cola, errores completos, estado y último evento del motor, candidatos con/sin URL, Chrome/CDP y últimas líneas del log. Una sola captura debe bastar para depurar. Mantiene motor de rotación, banner, interfaz y fluidez."
 }
