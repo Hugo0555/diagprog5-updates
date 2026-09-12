@@ -1,9 +1,9 @@
 {
-  "version": "94",
+  "version": "95",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V94_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V95_BOOTSTRAP.py",
   "download_url": "",
   "sha256": "",
-  "notes": "DIAGPROG5 V94 ADMIN · Corrige dos causas detectadas por el diagnóstico: elimina motores de rotación heredados para dejar un solo watchdog activo y, cuando los candidatos tienen URL:NO, intenta descubrir la URL real desde la sesión autenticada de Wallapop, la guarda en publicados.json y después ejecuta la eliminación segura. Mantiene diagnóstico total, banner, interfaz y fluidez."
+  "notes": "DIAGPROG5 V95 ADMIN · Pulido de rotación: corrige el guardado de URL aunque la base no tenga guardar_publicados(), amplía la detección del botón Eliminar/Borrar usando texto y atributos accesibles, registra controles visibles cuando Wallapop cambia su interfaz y mejora la confirmación de borrado. Mantiene un único motor, diagnóstico total, banner, interfaz y fluidez."
 }
