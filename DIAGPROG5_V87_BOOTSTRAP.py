@@ -1,95 +1,579 @@
 from pathlib import Path
-import re, sys, subprocess, py_compile, traceback
+import sys, subprocess, py_compile, json, time, traceback
 
-PATCH = '--- /mnt/data/v86work/bot_wallapop_profesional_v86_ADMIN_CENTRO_ACTUALIZACIONES.py\t2026-09-12 14:14:34.000000000 +0000\n+++ /mnt/data/bot_wallapop_profesional_v87_ADMIN_AUTOUPDATE_REAL.py\t2026-09-12 15:27:50.302373985 +0000\n@@ -390,8 +390,8 @@\n \n def licencia_requiere_online(datos):\n     """\n-    Las licencias V86 creadas como online usan online=True.\n-    Las licencias antiguas V67/V86 siguen funcionando offline.\n+    Las licencias V87 creadas como online usan online=True.\n+    Las licencias antiguas V67/V87 siguen funcionando offline.\n     """\n     return bool(\n         (datos or {}).get(\n@@ -772,7 +772,7 @@\n     ):\n         messagebox.showinfo(\n             "Licencia",\n-            "Esta licencia es del sistema offline V67/V86."\n+            "Esta licencia es del sistema offline V67/V87."\n         )\n         return\n \n@@ -994,7 +994,7 @@\n         )\n     )\n \n-    # Compatibilidad V67/V86: las licencias antiguas siguen ligadas\n+    # Compatibilidad V67/V87: las licencias antiguas siguen ligadas\n     # directamente a un único PC.\n     if not es_online:\n         if not maquina_licencia:\n@@ -5802,7 +5802,7 @@\n \n                 contexto = navegador.contexts[0]\n \n-                # En V86 solo limpiamos restos de formularios/confirmaciones.\n+                # En V87 solo limpiamos restos de formularios/confirmaciones.\n                 # Las pestañas normales se conservan como base de sesión.\n                 _limpiar_pestanas_residuales_antes_de_anuncio(\n                     contexto\n@@ -7160,7 +7160,7 @@\n                     pass\n \n     finally:\n-        # La clave de V86:\n+        # La clave de V87:\n         # cada anuncio de cola destruye por completo su pestaña, incluso si falló.\n         # El siguiente anuncio abrirá una nueva con la misma sesión de Chromium.\n         if modo_cola:\n@@ -7257,7 +7257,7 @@\n cuarentena_sesion = 0\n ultimo_motivo_cuarentena = ""\n \n-# Mega actualización V86\n+# Mega actualización V87\n objetivo_sesion_publicaciones = 0\n busqueda_cola_actual = ""\n \n@@ -8948,7 +8948,7 @@\n                 guardado,\n                 dict\n             ):\n-                # Migración automática V86 -> V86:\n+                # Migración automática V87 -> V87:\n                 # si existe antigüedad en días, convertir a horas.\n                 if (\n                     "antiguedad_min_horas" not in guardado\n@@ -10597,7 +10597,7 @@\n         pass\n \n     print(\n-        "Modo cola V86 activo: cada anuncio utilizará una pestaña nueva "\n+        "Modo cola V87 activo: cada anuncio utilizará una pestaña nueva "\n         "y la cerrará al finalizar."\n     )\n     cola_inicio_sesion = time.time()\n@@ -16423,6 +16423,14 @@\n     "actualizaciones"\n )\n \n+MAX_VERSIONES_ACTUALIZACION_GUARDADAS = 3\n+MAX_BACKUPS_ACTUALIZACION_GUARDADOS = 3\n+\n+ARCHIVO_HISTORIAL_ACTUALIZACIONES = os.path.join(\n+    CARPETA_DATOS_USUARIO,\n+    "historial_actualizaciones.json"\n+)\n+\n UPDATE_MANIFEST_DEFECTO = {\n     "activo": True,\n     "manifest_url": "https://diagprog5-updater.hugoneitor05cod3.workers.dev/version",\n@@ -16431,7 +16439,7 @@\n \n \n def version_actual_bot():\n-    return "86"\n+    return "87"\n \n \n def cargar_config_actualizaciones():\n@@ -16722,6 +16730,171 @@\n     return h.hexdigest()\n \n \n+def _registrar_actualizacion_historial(\n+    accion,\n+    version="",\n+    detalle=""\n+):\n+    try:\n+        ruta = Path(\n+            ARCHIVO_HISTORIAL_ACTUALIZACIONES\n+        )\n+\n+        historial = []\n+\n+        if ruta.exists():\n+            try:\n+                datos = json.loads(\n+                    ruta.read_text(\n+                        encoding="utf-8"\n+                    )\n+                )\n+                if isinstance(datos, list):\n+                    historial = datos\n+            except Exception:\n+                historial = []\n+\n+        historial.append({\n+            "fecha": time.strftime(\n+                "%d/%m/%Y %H:%M:%S"\n+            ),\n+            "accion": str(accion),\n+            "version": str(version),\n+            "detalle": str(detalle),\n+        })\n+\n+        historial = historial[-200:]\n+\n+        ruta.parent.mkdir(\n+            parents=True,\n+            exist_ok=True\n+        )\n+\n+        ruta.write_text(\n+            json.dumps(\n+                historial,\n+                ensure_ascii=False,\n+                indent=2\n+            ),\n+            encoding="utf-8"\n+        )\n+    except Exception:\n+        pass\n+\n+\n+def _limpiar_carpeta_conservar_ultimos(\n+    carpeta,\n+    patron="*",\n+    conservar=3\n+):\n+    try:\n+        ruta = Path(carpeta)\n+\n+        if not ruta.exists():\n+            return 0\n+\n+        archivos = [\n+            p for p in ruta.glob(patron)\n+            if p.is_file()\n+        ]\n+\n+        archivos.sort(\n+            key=lambda p: p.stat().st_mtime,\n+            reverse=True\n+        )\n+\n+        eliminados = 0\n+\n+        for antiguo in archivos[\n+            max(0, int(conservar)):\n+        ]:\n+            try:\n+                antiguo.unlink()\n+                eliminados += 1\n+            except Exception:\n+                pass\n+\n+        return eliminados\n+\n+    except Exception:\n+        return 0\n+\n+\n+def limpiar_archivos_actualizacion_antiguos():\n+    """\n+    Evita que cada actualización vaya acumulando archivos para siempre.\n+    Conserva solo las últimas versiones y backups configurados.\n+    """\n+    eliminados = 0\n+\n+    eliminados += _limpiar_carpeta_conservar_ultimos(\n+        CARPETA_ACTUALIZACIONES,\n+        patron="*.py",\n+        conservar=MAX_VERSIONES_ACTUALIZACION_GUARDADAS\n+    )\n+\n+    carpeta_backup = (\n+        Path(\n+            CARPETA_DATOS_USUARIO\n+        )\n+        / "backups_actualizaciones"\n+    )\n+\n+    eliminados += _limpiar_carpeta_conservar_ultimos(\n+        carpeta_backup,\n+        patron="*.py",\n+        conservar=MAX_BACKUPS_ACTUALIZACION_GUARDADOS\n+    )\n+\n+    if eliminados:\n+        _registrar_actualizacion_historial(\n+            "LIMPIEZA",\n+            version_actual_bot(),\n+            f"Eliminados {eliminados} archivo(s) antiguo(s)."\n+        )\n+\n+    return eliminados\n+\n+\n+def _archivo_descargado_es_valido(\n+    ruta,\n+    sha_esperado=""\n+):\n+    ruta = Path(ruta)\n+\n+    if not ruta.exists() or not ruta.is_file():\n+        return False\n+\n+    if sha_esperado:\n+        try:\n+            return (\n+                _sha256_archivo(\n+                    ruta\n+                ).lower()\n+                == str(\n+                    sha_esperado\n+                ).strip().lower()\n+            )\n+        except Exception:\n+            return False\n+\n+    # Sin SHA, al menos verificar sintaxis si es .py\n+    if ruta.suffix.lower() == ".py":\n+        try:\n+            compile(\n+                ruta.read_text(\n+                    encoding="utf-8"\n+                ),\n+                str(ruta),\n+                "exec"\n+            )\n+            return True\n+        except Exception:\n+            return False\n+\n+    return True\n+\n+\n def descargar_actualizacion_admin(\n     manifest=None\n ):\n@@ -16793,6 +16966,34 @@\n \n         destino = carpeta / nombre\n \n+        sha_esperado = str(\n+            manifest.get(\n+                "sha256",\n+                ""\n+            )\n+        ).strip().lower()\n+\n+        # Si ya se descargó antes y sigue siendo válida, reutilizarla.\n+        if _archivo_descargado_es_valido(\n+            destino,\n+            sha_esperado\n+        ):\n+            estado.configure(\n+                text=(\n+                    f"✅ V{version} ya estaba descargada y verificada."\n+                )\n+            )\n+\n+            _registrar_actualizacion_historial(\n+                "REUTILIZADA",\n+                version,\n+                str(destino)\n+            )\n+\n+            return str(\n+                destino\n+            )\n+\n         estado.configure(\n             text=f"⬇ Descargando actualización V{version}..."\n         )\n@@ -16813,13 +17014,6 @@\n                 resp.read()\n             )\n \n-        sha_esperado = str(\n-            manifest.get(\n-                "sha256",\n-                ""\n-            )\n-        ).strip().lower()\n-\n         if sha_esperado:\n             sha_real = _sha256_archivo(\n                 destino\n@@ -16851,6 +17045,14 @@\n             )\n         )\n \n+        _registrar_actualizacion_historial(\n+            "DESCARGADA",\n+            version,\n+            str(destino)\n+        )\n+\n+        limpiar_archivos_actualizacion_antiguos()\n+\n         return str(\n             destino\n         )\n@@ -16910,7 +17112,7 @@\n     if not destino:\n         return\n \n-    # Copia de seguridad de la versión actual.\n+    # Copia de seguridad: solo una copia por versión actual.\n     try:\n         actual = Path(\n             __file__\n@@ -16932,18 +17134,22 @@\n             carpeta_backup\n             / (\n                 actual.stem\n-                + "_"\n-                + time.strftime(\n-                    "%Y%m%d_%H%M%S"\n-                )\n+                + "_backup"\n                 + actual.suffix\n             )\n         )\n \n-        shutil.copy2(\n-            actual,\n-            backup\n-        )\n+        if not backup.exists():\n+            shutil.copy2(\n+                actual,\n+                backup\n+            )\n+\n+            _registrar_actualizacion_historial(\n+                "BACKUP",\n+                version_actual_bot(),\n+                str(backup)\n+            )\n \n     except Exception:\n         backup = None\n@@ -16992,6 +17198,14 @@\n                 )\n             )\n \n+        _registrar_actualizacion_historial(\n+            "ABIERTA",\n+            version,\n+            str(destino_path)\n+        )\n+\n+        limpiar_archivos_actualizacion_antiguos()\n+\n         estado.configure(\n             text=(\n                 f"✅ Nueva versión V{version} abierta. "\n@@ -17498,7 +17712,7 @@\n     except Exception as e:\n         print("No pude refrescar estado del plan:", e)\n \n-# Refresco automático V86:\n+# Refresco automático V87:\n # mantiene licencia, días y plan actualizados sin que el usuario pulse nada.\n def _refresco_estado_periodico():\n     try:\n@@ -18127,7 +18341,7 @@\n \n \n # =========================================================\n-# V86 · DISEÑO DE INTERFAZ APROBADO\n+# V87 · DISEÑO DE INTERFAZ APROBADO\n # =========================================================\n # La capa siguiente no modifica el motor de generación/publicación.\n # Reorganiza la aplicación en una interfaz lateral limpia y conserva\n@@ -18165,7 +18379,7 @@\n     return widgets\n \n \n-def _v86_restyle_combo(widget):\n+def _v87_restyle_combo(widget):\n     try:\n         widget.configure(\n             fg_color="#0b1116",\n@@ -18180,7 +18394,7 @@\n         pass\n \n \n-def _v86_restyle_paneles():\n+def _v87_restyle_paneles():\n     try:\n         for tab in TAB_FRAMES:\n             tab.configure(\n@@ -18232,7 +18446,7 @@\n     except Exception:\n         pass\n \n-    # === CREAR ANUNCIO · V86 ===\n+    # === CREAR ANUNCIO · V87 ===\n     try:\n         generar_btn.pack_forget()\n         generar_btn.configure(\n@@ -18336,7 +18550,7 @@\n     except Exception:\n         pass\n \n-    # === COLA · V86 ===\n+    # === COLA · V87 ===\n     try:\n         queue_card.configure(\n             fg_color="#071015",\n@@ -18395,7 +18609,7 @@\n     except Exception:\n         pass\n \n-    # === PUBLICAR · V86 ===\n+    # === PUBLICAR · V87 ===\n     try:\n         frame_publicar_directo.configure(\n             fg_color="#071015",\n@@ -18452,7 +18666,7 @@\n \n def aplicar_diseno_final_v84():\n     """\n-    Capa visual V86.\n+    Capa visual V87.\n     Mantiene funciones y variables internas para conservar compatibilidad.\n     """\n     try:\n@@ -18463,7 +18677,7 @@\n     except Exception:\n         pass\n \n-    _v86_restyle_paneles()\n+    _v87_restyle_paneles()\n \n     try:\n         for boton in menu_buttons:\n@@ -18499,13 +18713,13 @@\n     except Exception:\n         pass\n \n-    for combo_v86 in [\n+    for combo_v87 in [\n         plan_manual_combo,\n         lote_prioridad_combo,\n         filtro_estado_combo,\n         select_lote_cola,\n         diagnostico_lote_combo,\n     ]:\n-        _v86_restyle_combo(\n-            combo_v86\n+        _v87_restyle_combo(\n+            combo_v87\n         )\n \n \n@@ -19157,22 +19371,22 @@\n     )\n \n \n-def _v86_hay_publicacion_activa():\n+def _v87_hay_publicacion_activa():\n     return bool(\n         cola_en_ejecucion\n         and not cola_pausada\n     )\n \n \n-def _v86_texto_estado_global():\n-    if _v86_hay_publicacion_activa():\n+def _v87_texto_estado_global():\n+    if _v87_hay_publicacion_activa():\n         return "● Publicando", COLOR_UI_BLUE\n \n     if cola_pausada:\n         return "● En pausa", COLOR_UI_YELLOW\n \n-    errores_v86 = sum(\n+    errores_v87 = sum(\n         1\n         for item in cola_anuncios\n         if item.get("estado_cola") == "ERROR"\n     )\n \n-    if errores_v86:\n+    if errores_v87:\n         return "● Atención requerida", COLOR_UI_YELLOW\n \n     if cola_anuncios:\n@@ -19209,7 +19423,7 @@\n                 return "—"\n \n \n-def _v86_refrescar_item_seleccionado():\n+def _v87_refrescar_item_seleccionado():\n     try:\n         seleccionado = None\n \n@@ -19257,7 +19471,7 @@\n         pass\n \n \n-def _v86_refrescar_dashboard():\n+def _v87_refrescar_dashboard():\n     try:\n-        total_v86 = len(cola_anuncios)\n-        publicados_v86 = sum(\n+        total_v87 = len(cola_anuncios)\n+        publicados_v87 = sum(\n             1\n             for x in cola_anuncios\n             if x.get("estado_cola") == "PUBLICADO"\n@@ -19268,35 +19482,35 @@\n                 == time.strftime("%d/%m/%Y")\n             )\n         )\n-        proceso_v86 = sum(\n+        proceso_v87 = sum(\n             1\n             for x in cola_anuncios\n             if x.get("estado_cola") == "PUBLICANDO"\n         )\n-        errores_v86 = sum(\n+        errores_v87 = sum(\n             1\n             for x in cola_anuncios\n             if x.get("estado_cola") == "ERROR"\n         )\n \n         dashboard_kpi_cola.configure(\n-            text=str(total_v86)\n+            text=str(total_v87)\n         )\n         dashboard_kpi_publicados.configure(\n-            text=str(publicados_v86)\n+            text=str(publicados_v87)\n         )\n         dashboard_kpi_proceso.configure(\n-            text=str(proceso_v86)\n+            text=str(proceso_v87)\n         )\n         dashboard_kpi_errores.configure(\n-            text=str(errores_v86)\n+            text=str(errores_v87)\n         )\n \n-        texto_estado, color_estado = _v86_texto_estado_global()\n+        texto_estado, color_estado = _v87_texto_estado_global()\n         dashboard_estado_general.configure(\n             text=texto_estado,\n             text_color=color_estado\n         )\n \n-        _v86_refrescar_item_seleccionado()\n+        _v87_refrescar_item_seleccionado()\n \n     except Exception as e:\n         print("No pude refrescar dashboard:", e)\n@@ -19310,7 +19524,7 @@\n     _refrescar_cola_original()\n \n     try:\n-        _v86_refrescar_dashboard()\n+        _v87_refrescar_dashboard()\n     except Exception:\n         pass\n \n@@ -19321,7 +19535,7 @@\n     _refrescar_dashboard_original()\n \n     try:\n-        _v86_refrescar_dashboard()\n+        _v87_refrescar_dashboard()\n     except Exception:\n         pass\n \n@@ -19447,7 +19661,7 @@\n         dashboard_chrome_line.configure(\n             text=f"Chrome: {chrome_txt}"\n         )\n \n-        if _v86_hay_publicacion_activa():\n+        if _v87_hay_publicacion_activa():\n             dashboard_queue_badge.configure(\n                 text="● PUBLICANDO",\n                 text_color=COLOR_UI_GREEN\n@@ -19541,10 +19755,10 @@\n         pass\n \n     # Estado general\n-    texto_estado, color_estado = _v86_texto_estado_global()\n+    texto_estado, color_estado = _v87_texto_estado_global()\n \n     try:\n-        errores_v86 = sum(\n+        errores_v87 = sum(\n             1\n             for x in cola_anuncios\n             if x.get("estado_cola") == "ERROR"\n@@ -19553,7 +19767,7 @@\n         if dashboard_system_title is not None:\n             dashboard_system_title.configure(\n                 text="Estado del sistema"\n             )\n-        if errores_v86:\n+        if errores_v87:\n             dashboard_estado_general.configure(\n                 text="● Requiere atención",\n                 text_color="#ffb52e"\n@@ -20790,7 +21004,7 @@\n             )\n \n         # Resumen visual de cola.\n-        lineas_v86 = []\n+        lineas_v87 = []\n \n         for i, item in enumerate(\n             cola_anuncios[:12],\n@@ -20817,7 +21031,7 @@\n                 )\n             )\n \n-            lineas_v86.append(\n+            lineas_v87.append(\n                 f"{i:02d}   {titulo:<55}   {precio:>7} €   {est}"\n             )\n \n@@ -20829,10 +21043,10 @@\n             "end"\n         )\n \n-        if lineas_v86:\n+        if lineas_v87:\n             dashboard_queue_text.insert(\n                 "1.0",\n-                "\\n".join(lineas_v86)\n+                "\\n".join(lineas_v87)\n             )\n         else:\n             dashboard_queue_text.insert(\n@@ -20845,34 +21059,34 @@\n             state="disabled"\n         )\n \n-        total_trabajo_v86 = max(\n+        total_trabajo_v87 = max(\n             1,\n-            total_cola_v86\n+            total_cola_v87\n         )\n \n-        completados_v86 = sum(\n+        completados_v87 = sum(\n             1\n             for x in cola_anuncios\n             if x.get("estado_cola") == "PUBLICADO"\n         )\n \n-        porcentaje_v86 = int(\n-            completados_v86\n-            / total_trabajo_v86\n+        porcentaje_v87 = int(\n+            completados_v87\n+            / total_trabajo_v87\n             * 100\n         )\n \n         dashboard_progress.set(\n             min(\n                 1.0,\n-                completados_v86 / total_trabajo_v86\n+                completados_v87 / total_trabajo_v87\n             )\n         )\n \n         dashboard_progreso_texto.configure(\n             text=(\n                 f"Progreso actual                         "\n-                f"{porcentaje_v86}%"\n+                f"{porcentaje_v87}%"\n             )\n         )\n \n@@ -20880,7 +21094,7 @@\n \n         dashboard_eta.configure(\n             text=(\n-                f"{completados_v86} de {total_cola_v86} anuncios"\n+                f"{completados_v87} de {total_cola_v87} anuncios"\n                 f"             Tiempo estimado: "\n                 f"{_formatear_duracion(eta_seg)}"\n             )\n@@ -23231,7 +23445,7 @@\n ctk.set_default_color_theme("blue")\n \n ventana = ctk.CTk()\n-ventana.title("DIAGPROG5 - WALLAPOP BOT (ADMIN) · V86")\n+ventana.title("DIAGPROG5 - WALLAPOP BOT (ADMIN) · V87")\n ventana.geometry("1680x950")\n ventana.minsize(1280, 800)\n \n@@ -23333,7 +23547,7 @@\n ventana.configure(fg_color=COLOR_FONDO)\n \n # =========================================================\n-# UI V86 · DISEÑO APROBADO\n+# UI V87 · DISEÑO APROBADO\n # =========================================================\n COLOR_UI_BG = "#05080b"\n COLOR_UI_PANEL = "#081017"\n@@ -23347,7 +23561,7 @@\n COLOR_UI_MUTED = "#98a7b2"\n \n \n-# ---------------- HEADER · V86 ----------------\n+# ---------------- HEADER · V87 ----------------\n \n header_total = ctk.CTkFrame(\n     ventana,\n@@ -23633,7 +23847,7 @@\n     pass\n \n # =========================================================\n-# TAB 0 · INICIO · V86\n+# TAB 0 · INICIO · V87\n # =========================================================\n \n dashboard_scroll = ctk.CTkScrollableFrame(\n@@ -23660,7 +23874,7 @@\n for c in range(5):\n     kpi_row.grid_columnconfigure(c, weight=1)\n \n-def _crear_kpi_v86(parent, col, icono, titulo, valor, color):\n+def _crear_kpi_v87(parent, col, icono, titulo, valor, color):\n     card = ctk.CTkFrame(\n         parent,\n         fg_color=COLOR_UI_PANEL,\n@@ -23717,19 +23931,19 @@\n \n     return value\n \n-dashboard_kpi_cola = _crear_kpi_v86(\n+dashboard_kpi_cola = _crear_kpi_v87(\n     kpi_row, 0, "▤", "Anuncios en cola", "0", "#6c101c"\n )\n \n-dashboard_kpi_publicados = _crear_kpi_v86(\n+dashboard_kpi_publicados = _crear_kpi_v87(\n     kpi_row, 1, "✓", "Publicados hoy", "0", "#0b6841"\n )\n \n-dashboard_kpi_proceso = _crear_kpi_v86(\n+dashboard_kpi_proceso = _crear_kpi_v87(\n     kpi_row, 2, "◷", "En proceso", "0", "#0e568c"\n )\n \n-dashboard_kpi_errores = _crear_kpi_v86(\n+dashboard_kpi_errores = _crear_kpi_v87(\n     kpi_row, 3, "✕", "Errores", "0", "#6c101c"\n )\n \n@@ -24050,18 +24264,18 @@\n     pady=(0, 10)\n )\n \n-fila_control_v86 = ctk.CTkFrame(\n+fila_control_v87 = ctk.CTkFrame(\n     control_card,\n     fg_color="transparent"\n )\n-fila_control_v86.pack(\n+fila_control_v87.pack(\n     fill="x",\n     padx=10,\n     pady=(0, 10)\n )\n \n ctk.CTkButton(\n-    fila_control_v86,\n+    fila_control_v87,\n     text="Ⅱ  Pausar",\n     command=pausar_cola,\n     height=42,\n@@ -24075,7 +24289,7 @@\n )\n \n ctk.CTkButton(\n-    fila_control_v86,\n+    fila_control_v87,\n     text="■  Detener",\n     command=cancelar_cola,\n     height=42,\n@@ -24172,18 +24386,18 @@\n )\n \n # Footer visual del dashboard\n-footer_v86 = ctk.CTkFrame(\n+footer_v87 = ctk.CTkFrame(\n     dashboard_scroll,\n     fg_color="#071017",\n     corner_radius=0\n )\n-footer_v86.pack(\n+footer_v87.pack(\n     fill="x",\n     pady=(10, 0)\n )\n \n ctk.CTkLabel(\n-    footer_v86,\n+    footer_v87,\n     text="DIAGPROG5",\n     font=("Segoe UI", 13, "bold")\n ).pack(\n@@ -24193,7 +24407,7 @@\n )\n \n ctk.CTkLabel(\n-    footer_v86,\n+    footer_v87,\n     text="DEL CAMPO A LA CARRETERA, TODO EN MOVIMIENTO",\n     font=("Segoe UI", 9),\n     text_color=COLOR_UI_MUTED\n@@ -24203,7 +24417,7 @@\n )\n \n dashboard_footer_estado = ctk.CTkLabel(\n-    footer_v86,\n+    footer_v87,\n     text="●  Listo para trabajar",\n     font=("Segoe UI", 10, "bold"),\n     text_color=COLOR_UI_GREEN\n@@ -26891,9 +27105,9 @@\n ctk.CTkLabel(\n     panel_actualizaciones_admin,\n     text=(\n-        "Este es el puente de actualización de tu versión ADMIN. "\n-        "Cuando conectemos una URL de actualizaciones, podrás comprobar, "\n-        "descargar y abrir nuevas versiones desde el propio programa."\n+        "Actualizador ADMIN conectado. Comprueba, descarga, verifica y abre "\n+        "nuevas versiones sin acumular archivos indefinidamente. "\n+        "Se conservan solo las últimas versiones y copias de seguridad."\n     ),\n     font=("Segoe UI", 10),\n     text_color=COLOR_TEXTO_SEC,\n@@ -28509,7 +28723,7 @@\n \n ctk.CTkLabel(\n     barra_estado,\n-    text="DIAGPROG5 · WALLAPOP BOT · V86",\n+    text="DIAGPROG5 · WALLAPOP BOT · V87",\n     font=("Segoe UI", 12),\n     text_color=COLOR_TEXTO_SEC\n ).pack(side="right", padx=22)\n'
 OUTPUT_NAME = "bot_wallapop_profesional_v87_ADMIN_AUTOUPDATE_REAL.py"
 
-def apply_unified_diff(original_text, patch_text):
-    src = original_text.splitlines(keepends=True)
-    out = []
-    src_idx = 0
-    lines = patch_text.splitlines(keepends=True)
-    i = 0
-    while i < len(lines) and not lines[i].startswith("@@"):
-        i += 1
-    while i < len(lines):
-        if not lines[i].startswith("@@"):
-            i += 1
-            continue
-        m = re.match(r"@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@", lines[i])
-        if not m:
-            raise RuntimeError("Hunk de actualización inválido: " + lines[i].strip())
-        old_start = int(m.group(1)) - 1
-        if old_start < src_idx:
-            raise RuntimeError("Orden de hunks inválido")
-        out.extend(src[src_idx:old_start])
-        src_idx = old_start
-        i += 1
-        while i < len(lines) and not lines[i].startswith("@@"):
-            line = lines[i]
-            if line.startswith("\\ No newline"):
-                i += 1
-                continue
-            prefix = line[:1]
-            payload = line[1:] if prefix in " +-" else line
-            if prefix == " ":
-                if src_idx >= len(src):
-                    raise RuntimeError(f"Fin inesperado en línea {src_idx+1}")
-                out.append(src[src_idx]); src_idx += 1
-            elif prefix == "-":
-                if src_idx >= len(src):
-                    raise RuntimeError(f"Fin inesperado al sustituir línea {src_idx+1}")
-                src_idx += 1
-            elif prefix == "+":
-                out.append(payload)
-            else:
-                break
-            i += 1
-    out.extend(src[src_idx:])
-    return "".join(out)
+HELPERS = r'''
+def _registrar_actualizacion_historial(
+    accion,
+    version="",
+    detalle=""
+):
+    try:
+        ruta = Path(
+            ARCHIVO_HISTORIAL_ACTUALIZACIONES
+        )
+
+        historial = []
+
+        if ruta.exists():
+            try:
+                datos = json.loads(
+                    ruta.read_text(
+                        encoding="utf-8"
+                    )
+                )
+                if isinstance(datos, list):
+                    historial = datos
+            except Exception:
+                historial = []
+
+        historial.append({
+            "fecha": time.strftime(
+                "%d/%m/%Y %H:%M:%S"
+            ),
+            "accion": str(accion),
+            "version": str(version),
+            "detalle": str(detalle),
+        })
+
+        historial = historial[-200:]
+
+        ruta.parent.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        ruta.write_text(
+            json.dumps(
+                historial,
+                ensure_ascii=False,
+                indent=2
+            ),
+            encoding="utf-8"
+        )
+    except Exception:
+        pass
+
+
+def _limpiar_carpeta_conservar_ultimos(
+    carpeta,
+    patron="*",
+    conservar=3
+):
+    try:
+        ruta = Path(carpeta)
+
+        if not ruta.exists():
+            return 0
+
+        archivos = [
+            p for p in ruta.glob(patron)
+            if p.is_file()
+        ]
+
+        archivos.sort(
+            key=lambda p: p.stat().st_mtime,
+            reverse=True
+        )
+
+        eliminados = 0
+
+        for antiguo in archivos[
+            max(0, int(conservar)):
+        ]:
+            try:
+                antiguo.unlink()
+                eliminados += 1
+            except Exception:
+                pass
+
+        return eliminados
+
+    except Exception:
+        return 0
+
+
+def limpiar_archivos_actualizacion_antiguos():
+    eliminados = 0
+
+    eliminados += _limpiar_carpeta_conservar_ultimos(
+        CARPETA_ACTUALIZACIONES,
+        patron="*.py",
+        conservar=MAX_VERSIONES_ACTUALIZACION_GUARDADAS
+    )
+
+    carpeta_backup = (
+        Path(
+            CARPETA_DATOS_USUARIO
+        )
+        / "backups_actualizaciones"
+    )
+
+    eliminados += _limpiar_carpeta_conservar_ultimos(
+        carpeta_backup,
+        patron="*.py",
+        conservar=MAX_BACKUPS_ACTUALIZACION_GUARDADOS
+    )
+
+    if eliminados:
+        _registrar_actualizacion_historial(
+            "LIMPIEZA",
+            version_actual_bot(),
+            f"Eliminados {eliminados} archivo(s) antiguo(s)."
+        )
+
+    return eliminados
+
+
+def _archivo_descargado_es_valido(
+    ruta,
+    sha_esperado=""
+):
+    ruta = Path(ruta)
+
+    if not ruta.exists() or not ruta.is_file():
+        return False
+
+    if sha_esperado:
+        try:
+            return (
+                _sha256_archivo(
+                    ruta
+                ).lower()
+                == str(
+                    sha_esperado
+                ).strip().lower()
+            )
+        except Exception:
+            return False
+
+    if ruta.suffix.lower() == ".py":
+        try:
+            compile(
+                ruta.read_text(
+                    encoding="utf-8"
+                ),
+                str(ruta),
+                "exec"
+            )
+            return True
+        except Exception:
+            return False
+
+    return True
+
+
+'''
+
+def require_replace(text, old, new, label):
+    if old not in text:
+        raise RuntimeError(
+            f"No encontré el bloque necesario: {label}"
+        )
+    return text.replace(
+        old,
+        new,
+        1
+    )
+
 
 def find_v86(data_dir):
     backups = data_dir / "backups_actualizaciones"
     candidates = []
+
     if backups.exists():
-        candidates += list(backups.glob("*v86*_backup.py"))
-        candidates += list(backups.glob("*V86*_backup.py"))
-        candidates += list(backups.glob("*.py"))
-    candidates = [p for p in candidates if p.is_file()]
-    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+        candidates += list(
+            backups.glob("*.py")
+        )
+
+    candidates = [
+        p for p in candidates
+        if p.is_file()
+    ]
+
+    candidates.sort(
+        key=lambda p: p.stat().st_mtime,
+        reverse=True
+    )
+
     for p in candidates:
         try:
-            t = p.read_text(encoding="utf-8")
-            if 'return "86"' in t and "DIAGPROG5" in t:
+            t = p.read_text(
+                encoding="utf-8"
+            )
+
+            if (
+                'return "86"' in t
+                and "DIAGPROG5" in t
+            ):
                 return p
         except Exception:
             pass
+
     return None
 
+
+def construir_v87(original):
+    text = original
+
+    text = require_replace(
+        text,
+        'def version_actual_bot():\n    return "86"',
+        'def version_actual_bot():\n    return "87"',
+        "version_actual_bot"
+    )
+
+    marker = '''CARPETA_ACTUALIZACIONES = os.path.join(
+    CARPETA_DATOS_USUARIO,
+    "actualizaciones"
+)
+'''
+
+    extra = marker + '''
+MAX_VERSIONES_ACTUALIZACION_GUARDADAS = 3
+MAX_BACKUPS_ACTUALIZACION_GUARDADOS = 3
+
+ARCHIVO_HISTORIAL_ACTUALIZACIONES = os.path.join(
+    CARPETA_DATOS_USUARIO,
+    "historial_actualizaciones.json"
+)
+'''
+
+    text = require_replace(
+        text,
+        marker,
+        extra,
+        "constantes del actualizador"
+    )
+
+    text = require_replace(
+        text,
+        'def descargar_actualizacion_admin(\n',
+        HELPERS + 'def descargar_actualizacion_admin(\n',
+        "helpers del actualizador"
+    )
+
+    needle = '''        destino = carpeta / nombre
+
+        estado.configure(
+            text=f"⬇ Descargando actualización V{version}..."
+        )
+'''
+
+    repl = '''        destino = carpeta / nombre
+
+        sha_esperado = str(
+            manifest.get(
+                "sha256",
+                ""
+            )
+        ).strip().lower()
+
+        if _archivo_descargado_es_valido(
+            destino,
+            sha_esperado
+        ):
+            estado.configure(
+                text=(
+                    f"✅ V{version} ya estaba descargada y verificada."
+                )
+            )
+
+            _registrar_actualizacion_historial(
+                "REUTILIZADA",
+                version,
+                str(destino)
+            )
+
+            return str(
+                destino
+            )
+
+        estado.configure(
+            text=f"⬇ Descargando actualización V{version}..."
+        )
+'''
+
+    text = require_replace(
+        text,
+        needle,
+        repl,
+        "reutilización de descarga"
+    )
+
+    duplicate_sha = '''        sha_esperado = str(
+            manifest.get(
+                "sha256",
+                ""
+            )
+        ).strip().lower()
+
+        if sha_esperado:
+'''
+
+    text = require_replace(
+        text,
+        duplicate_sha,
+        '''        if sha_esperado:
+''',
+        "SHA duplicado"
+    )
+
+    needle = '''        estado.configure(
+            text=(
+                f"✅ Actualización V{version} descargada y verificada."
+            )
+        )
+
+        return str(
+            destino
+        )
+'''
+
+    repl = '''        estado.configure(
+            text=(
+                f"✅ Actualización V{version} descargada y verificada."
+            )
+        )
+
+        _registrar_actualizacion_historial(
+            "DESCARGADA",
+            version,
+            str(destino)
+        )
+
+        limpiar_archivos_actualizacion_antiguos()
+
+        return str(
+            destino
+        )
+'''
+
+    text = require_replace(
+        text,
+        needle,
+        repl,
+        "registro de descarga"
+    )
+
+    old_backup = '''    # Copia de seguridad de la versión actual.
+    try:
+        actual = Path(
+            __file__
+        ).resolve()
+
+        carpeta_backup = (
+            Path(
+                CARPETA_DATOS_USUARIO
+            )
+            / "backups_actualizaciones"
+        )
+
+        carpeta_backup.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        backup = (
+            carpeta_backup
+            / (
+                actual.stem
+                + "_"
+                + time.strftime(
+                    "%Y%m%d_%H%M%S"
+                )
+                + actual.suffix
+            )
+        )
+
+        shutil.copy2(
+            actual,
+            backup
+        )
+
+    except Exception:
+        backup = None
+'''
+
+    new_backup = '''    # Copia de seguridad: solo una copia por versión actual.
+    try:
+        actual = Path(
+            __file__
+        ).resolve()
+
+        carpeta_backup = (
+            Path(
+                CARPETA_DATOS_USUARIO
+            )
+            / "backups_actualizaciones"
+        )
+
+        carpeta_backup.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        backup = (
+            carpeta_backup
+            / (
+                actual.stem
+                + "_backup"
+                + actual.suffix
+            )
+        )
+
+        if not backup.exists():
+            shutil.copy2(
+                actual,
+                backup
+            )
+
+            _registrar_actualizacion_historial(
+                "BACKUP",
+                version_actual_bot(),
+                str(backup)
+            )
+
+    except Exception:
+        backup = None
+'''
+
+    text = require_replace(
+        text,
+        old_backup,
+        new_backup,
+        "backup único"
+    )
+
+    needle = '''        estado.configure(
+            text=(
+                f"✅ Nueva versión V{version} abierta. "
+                "Puedes cerrar esta versión cuando compruebes que funciona."
+            )
+        )
+'''
+
+    repl = '''        _registrar_actualizacion_historial(
+            "ABIERTA",
+            version,
+            str(destino_path)
+        )
+
+        limpiar_archivos_actualizacion_antiguos()
+
+        estado.configure(
+            text=(
+                f"✅ Nueva versión V{version} abierta. "
+                "Puedes cerrar esta versión cuando compruebes que funciona."
+            )
+        )
+'''
+
+    text = require_replace(
+        text,
+        needle,
+        repl,
+        "registro de apertura"
+    )
+
+    text = text.replace(
+        "DIAGPROG5 - WALLAPOP BOT (ADMIN) · V86",
+        "DIAGPROG5 - WALLAPOP BOT (ADMIN) · V87"
+    )
+
+    text = text.replace(
+        "DIAGPROG5 · WALLAPOP BOT · V86",
+        "DIAGPROG5 · WALLAPOP BOT · V87"
+    )
+
+    text = text.replace(
+        '''"Este es el puente de actualización de tu versión ADMIN. "
+        "Cuando conectemos una URL de actualizaciones, podrás comprobar, "
+        "descargar y abrir nuevas versiones desde el propio programa."''',
+        '''"Actualizador ADMIN conectado. Comprueba, descarga, verifica y abre "
+        "nuevas versiones sin acumular archivos indefinidamente. "
+        "Se conservan solo las últimas versiones y copias de seguridad."'''
+    )
+
+    return text
+
+
 def main():
-    here = Path(__file__).resolve()
+    here = Path(
+        __file__
+    ).resolve()
+
     data_dir = here.parent.parent
-    source = find_v86(data_dir)
+
+    source = find_v86(
+        data_dir
+    )
+
     if source is None:
-        raise RuntimeError("No encontré el backup de DIAGPROG5 V86 creado por el actualizador.")
-    original = source.read_text(encoding="utf-8")
-    updated = apply_unified_diff(original, PATCH)
-    target = here.parent / OUTPUT_NAME
-    target.write_text(updated, encoding="utf-8")
-    py_compile.compile(str(target), doraise=True)
-    subprocess.Popen([sys.executable, str(target)], cwd=str(target.parent))
+        raise RuntimeError(
+            "No encontré el backup V86 creado por el actualizador."
+        )
+
+    original = source.read_text(
+        encoding="utf-8"
+    )
+
+    updated = construir_v87(
+        original
+    )
+
+    target = (
+        here.parent
+        / OUTPUT_NAME
+    )
+
+    target.write_text(
+        updated,
+        encoding="utf-8"
+    )
+
+    py_compile.compile(
+        str(target),
+        doraise=True
+    )
+
+    subprocess.Popen(
+        [
+            sys.executable,
+            str(target),
+        ],
+        cwd=str(
+            target.parent
+        )
+    )
+
     return target
+
 
 if __name__ == "__main__":
     try:
         main()
+
     except Exception as e:
         try:
             import tkinter as tk
             from tkinter import messagebox
-            root = tk.Tk(); root.withdraw()
-            messagebox.showerror("DIAGPROG5 · Actualización V87", "No pude completar la actualización:\n\n" + str(e))
+
+            root = tk.Tk()
+            root.withdraw()
+
+            messagebox.showerror(
+                "DIAGPROG5 · Actualización V87",
+                (
+                    "No pude completar la actualización:\n\n"
+                    + str(e)
+                )
+            )
+
             root.destroy()
+
         except Exception:
             traceback.print_exc()
+
         raise
