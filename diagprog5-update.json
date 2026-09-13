@@ -1,9 +1,9 @@
 {
-  "version": "104",
+  "version": "105",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V104_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V105_BOOTSTRAP.py",
   "download_url": "https://diagprog5-updater.hugoneitor05cod3.workers.dev/download",
-  "sha256": "19cf79322120b1ae457915e8afe82a16a6b09d9bfae5887e01c02d6e3cbaa990",
-  "notes": "V104: panel Borrar antiguos con cantidad de 1 a 500, antigüedad mínima, pausa, vista previa, confirmación, parada e historial. Borrado independiente de la publicación. Solo registros locales con fecha y enlace identificable. Correcciones de backup y autochequeo. Instalación automática desde V103; mantiene datos compartidos. La verificación real del borrado requiere una prueba en tu PC."
+  "sha256": "ab301e4cfb600965a92f0c584281e1646a19988cbc4afa44415ccbd2097bb782",
+  "notes": "V105 estable: actualizador TLS reparado con almacén de Windows y alternativa mediante Chrome, interfaz no bloqueante, validación SHA-256, arranque reversible, publicaciones desde pestaña limpia, bloqueo de duplicidad concurrente, modo prueba desactivado, menor carga de fondo y panel de borrado antiguo ajustable."
 }
