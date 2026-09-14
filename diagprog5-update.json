@@ -1,9 +1,9 @@
 {
-  "version": "106",
+  "version": "107",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V106_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V107_BOOTSTRAP.py",
   "download_url": "https://diagprog5-updater.hugoneitor05cod3.workers.dev/download",
-  "sha256": "d347c59bd1f1fefb7671f73b70b14f594a9a6463b7adab601dbc7bd105f8fd7b",
-  "notes": "V106: Borrar antiguos ahora tiene un apartado visible en el menú lateral y un acceso grande desde Inicio. Conserva las reparaciones de actualización, estabilidad, publicación y borrado seguro de V105."
+  "sha256": "c53786afcfd0c7faf5d99943bfe32fa8d7fd6ea75cb2fdc64185d7e4cd9f4dcf",
+  "notes": "V107: Borrar antiguos sustituye a Licencias en el menú principal. El diagnóstico ya trata Chrome cerrado como estado normal y no exige una clave privada. El actualizador conserva la ventana anterior abierta y puede instalar desde AppData aunque la versión actual se ejecutase fuera de la carpeta de versiones."
 }
