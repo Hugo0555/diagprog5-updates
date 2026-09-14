@@ -1,11 +1,12 @@
 {
   "channel": "admin",
   "version": "116",
-  "notes": "V116 R2: corrige la validación del paquete de borrado y reconoce la confirmación actual de Wallapop «Sí, eliminarlo».",
+  "notes": "V116 R3: compatibilidad con el validador SHA-256 obligatorio de V115/R4 y confirmación automática «Sí, eliminarlo».",
   "files": [
     {
       "name": "borrado_antiguos.py",
-      "url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/updates/borrado_antiguos_v116.py"
+      "url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/updates/borrado_antiguos_v116.py",
+      "sha256": "0f52ff0d3683d37bd9f545cf6a8260d5c04fc02643d0f9e66b8ea264c70151b6"
     }
   ],
   "patches": [
@@ -34,5 +35,7 @@
       "count": 1
     }
   ],
-  "result_sha256": {}
+  "result_sha256": {
+    "borrado_antiguos.py": "0f52ff0d3683d37bd9f545cf6a8260d5c04fc02643d0f9e66b8ea264c70151b6"
+  }
 }
