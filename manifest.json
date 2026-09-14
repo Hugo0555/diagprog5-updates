@@ -1,15 +1,21 @@
 {
   "channel": "admin",
   "version": "116",
-  "notes": "V116 R3: compatibilidad con el validador SHA-256 obligatorio de V115/R4 y confirmación automática «Sí, eliminarlo».",
-  "files": [
-    {
-      "name": "borrado_antiguos.py",
-      "url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/updates/borrado_antiguos_v116.py",
-      "sha256": "0f52ff0d3683d37bd9f545cf6a8260d5c04fc02643d0f9e66b8ea264c70151b6"
-    }
-  ],
+  "notes": "V116: corrige la confirmación actual de Wallapop «Sí, eliminarlo». Esta revisión se aplica como parche directo sobre V115 para evitar el problema de validación SHA del archivo completo.",
+  "files": [],
   "patches": [
+    {
+      "file": "borrado_antiguos.py",
+      "old": "r'^s[ií][, ]+(eliminar|borrar|retirar)( (este )?(anuncio|producto|art[ií]culo|item))?$',",
+      "new": "r'^s[ií][, ]+(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',",
+      "count": 1
+    },
+    {
+      "file": "borrado_antiguos.py",
+      "old": "r'^(eliminar|borrar|retirar)( (este )?(anuncio|producto|art[ií]culo|item))?$',",
+      "new": "r'^(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',",
+      "count": 1
+    },
     {
       "file": "DIAGPROG5.py",
       "old": "return \"115\"",
@@ -35,7 +41,5 @@
       "count": 1
     }
   ],
-  "result_sha256": {
-    "borrado_antiguos.py": "0f52ff0d3683d37bd9f545cf6a8260d5c04fc02643d0f9e66b8ea264c70151b6"
-  }
+  "result_sha256": {}
 }
