@@ -1,43 +1,37 @@
 {
   "channel": "admin",
-  "version": "116",
-  "notes": "V116: corrige la confirmación actual de Wallapop «Sí, eliminarlo». Esta revisión se aplica como parche directo sobre V115 para evitar el problema de validación SHA del archivo completo.",
+  "version": "117",
+  "notes": "V117: corrige la confirmación final de borrado en Wallapop pulsando directamente el texto visible «Sí, eliminarlo» dentro del diálogo, con varias rutas de respaldo.",
   "files": [],
   "patches": [
     {
       "file": "borrado_antiguos.py",
-      "old": "r'^s[ií][, ]+(eliminar|borrar|retirar)( (este )?(anuncio|producto|art[ií]culo|item))?$',",
-      "new": "r'^s[ií][, ]+(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',",
-      "count": 1
-    },
-    {
-      "file": "borrado_antiguos.py",
-      "old": "r'^(eliminar|borrar|retirar)( (este )?(anuncio|producto|art[ií]culo|item))?$',",
-      "new": "r'^(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',",
+      "old": "        confirm=_buscar_control(scope,[\n            r'^s[ií][, ]+(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',\n            r'^(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',\n            r'^confirmar$', r'^aceptar$'\n        ],roles=('button','menuitem'))\n        if confirm is not None:\n            confirm.click(timeout=5000)\n            return True\n    return False",
+      "new": "        confirm=_buscar_control(scope,[\n            r'^s[ií][, ]+(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',\n            r'^(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',\n            r'^confirmar$', r'^aceptar$'\n        ],roles=('button','menuitem'))\n        if confirm is not None:\n            confirm.click(timeout=5000)\n            return True\n\n        # Wallapop muestra actualmente «Sí, eliminarlo». En algunos\n        # despliegues el botón no expone un role accesible fiable, así que\n        # usamos el texto visible dentro del propio diálogo como respaldo.\n        if _click_texto(scope,[\n            r'^s[ií][, ]*eliminarlo$',\n            r'^s[ií][, ]*borrarlo$',\n            r'^s[ií][, ]*retirarlo$',\n            r'^eliminarlo$',\n            r'^borrarlo$',\n            r'^retirarlo$'\n        ]):\n            return True\n\n        # Último respaldo: localizador CSS/texto sobre botones del diálogo.\n        for sel in ('button', '[role=\"button\"]'):\n            try:\n                loc=scope.locator(sel)\n                for i in range(min(loc.count(),30)):\n                    el=loc.nth(i)\n                    if not _visible_enabled(el):\n                        continue\n                    txt=(el.inner_text(timeout=1200) or '').strip()\n                    if re.fullmatch(r'(?i)s[ií][, ]*(eliminarlo|borrarlo|retirarlo)',txt):\n                        el.click(timeout=5000)\n                        return True\n            except Exception:\n                pass\n    return False",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "return \"115\"",
-      "new": "return \"116\"",
+      "old": "return \"116\"",
+      "new": "return \"117\"",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "ventana.title(\"DIAGPROG5 Pro · V115\")",
-      "new": "ventana.title(\"DIAGPROG5 Pro · V116\")",
+      "old": "ventana.title(\"DIAGPROG5 Pro · V116\")",
+      "new": "ventana.title(\"DIAGPROG5 Pro · V117\")",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "text=\"PRO  /  V115\"",
-      "new": "text=\"PRO  /  V116\"",
+      "old": "text=\"PRO  /  V116\"",
+      "new": "text=\"PRO  /  V117\"",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "text=\"DIAGPROG5 PRO · V115\"",
-      "new": "text=\"DIAGPROG5 PRO · V116\"",
+      "old": "text=\"DIAGPROG5 PRO · V116\"",
+      "new": "text=\"DIAGPROG5 PRO · V117\"",
       "count": 1
     }
   ],
