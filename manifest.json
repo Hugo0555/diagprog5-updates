@@ -1,8 +1,42 @@
 {
   "channel": "admin",
-  "version": "114",
-  "notes": "V114: base permanente del actualizador automático por GitHub. Las futuras versiones se construirán desde archivos verificados y parches pequeños, y solo quedarán activas si arrancan correctamente.",
-  "files": [],
-  "patches": [],
-  "result_sha256": {}
+  "version": "115",
+  "notes": "V115: corrige el borrado de anuncios antiguos en Wallapop. Añade detección más robusta de Eliminar/Borrar/Retirar, menús de tres puntos, motivos de borrado, confirmaciones múltiples y verificación final en Mis productos.",
+  "files": [
+    {
+      "name": "borrado_antiguos.py",
+      "url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/updates/borrado_antiguos_v115.py",
+      "sha256": "44f546b8e03c6ad853142d06ca76d591438a672bc99828667f563d0ede0bdf29"
+    }
+  ],
+  "patches": [
+    {
+      "file": "DIAGPROG5.py",
+      "old": "return \"114\"",
+      "new": "return \"115\"",
+      "count": 1
+    },
+    {
+      "file": "DIAGPROG5.py",
+      "old": "ventana.title(\"DIAGPROG5 Pro · V114\")",
+      "new": "ventana.title(\"DIAGPROG5 Pro · V115\")",
+      "count": 1
+    },
+    {
+      "file": "DIAGPROG5.py",
+      "old": "text=\"PRO  /  V114\"",
+      "new": "text=\"PRO  /  V115\"",
+      "count": 1
+    },
+    {
+      "file": "DIAGPROG5.py",
+      "old": "text=\"DIAGPROG5 PRO · V114\"",
+      "new": "text=\"DIAGPROG5 PRO · V115\"",
+      "count": 1
+    }
+  ],
+  "result_sha256": {
+    "DIAGPROG5.py": "33fa24a6fc9ef93bf2f3266ce065278d87abacde1793dd82bc86d3e5a072bcc4",
+    "borrado_antiguos.py": "44f546b8e03c6ad853142d06ca76d591438a672bc99828667f563d0ede0bdf29"
+  }
 }
