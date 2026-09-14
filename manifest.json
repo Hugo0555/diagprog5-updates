@@ -1,7 +1,7 @@
 {
   "channel": "admin",
   "version": "116",
-  "notes": "V116: reconoce la confirmación actual de Wallapop «Sí, eliminarlo» y variantes equivalentes, y mantiene la verificación final antes de continuar con el siguiente anuncio.",
+  "notes": "V116 R2: corrige la validación del paquete de borrado y reconoce la confirmación actual de Wallapop «Sí, eliminarlo».",
   "files": [
     {
       "name": "borrado_antiguos.py",
