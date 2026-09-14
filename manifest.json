@@ -1,41 +1,38 @@
 {
   "channel": "admin",
-  "version": "115",
-  "notes": "V115: corrige el borrado de anuncios antiguos en Wallapop. Añade detección más robusta de Eliminar/Borrar/Retirar, menús de tres puntos, motivos de borrado, confirmaciones múltiples y verificación final en Mis productos.",
+  "version": "116",
+  "notes": "V116: reconoce la confirmación actual de Wallapop «Sí, eliminarlo» y variantes equivalentes, y mantiene la verificación final antes de continuar con el siguiente anuncio.",
   "files": [
     {
       "name": "borrado_antiguos.py",
-      "url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/updates/borrado_antiguos_v115.py",
-      "sha256": "7b9c11051e7863d0e6e7e2cef764bad4b73339ba2cbbd50d806617b9f9f980ad"
+      "url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/updates/borrado_antiguos_v116.py"
     }
   ],
   "patches": [
     {
       "file": "DIAGPROG5.py",
-      "old": "return \"114\"",
-      "new": "return \"115\"",
+      "old": "return \"115\"",
+      "new": "return \"116\"",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "ventana.title(\"DIAGPROG5 Pro · V114\")",
-      "new": "ventana.title(\"DIAGPROG5 Pro · V115\")",
+      "old": "ventana.title(\"DIAGPROG5 Pro · V115\")",
+      "new": "ventana.title(\"DIAGPROG5 Pro · V116\")",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "text=\"PRO  /  V114\"",
-      "new": "text=\"PRO  /  V115\"",
+      "old": "text=\"PRO  /  V115\"",
+      "new": "text=\"PRO  /  V116\"",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "text=\"DIAGPROG5 PRO · V114\"",
-      "new": "text=\"DIAGPROG5 PRO · V115\"",
+      "old": "text=\"DIAGPROG5 PRO · V115\"",
+      "new": "text=\"DIAGPROG5 PRO · V116\"",
       "count": 1
     }
   ],
-  "result_sha256": {
-    "borrado_antiguos.py": "7b9c11051e7863d0e6e7e2cef764bad4b73339ba2cbbd50d806617b9f9f980ad"
-  }
+  "result_sha256": {}
 }
