@@ -1,0 +1,8 @@
+{
+  "channel": "admin",
+  "version": "114",
+  "notes": "V114: actualizador automático por GitHub con persistencia entre reinicios y verificación SHA-256.",
+  "filename": "DIAGPROG5_V114_BOOTSTRAP.py",
+  "download_url": "https://raw.githubusercontent.com/Hugo0555/diagprog5-updates/main/updates/DIAGPROG5_V114_BOOTSTRAP.py",
+  "sha256": "cbc986502d46e5de6367687115a1c6d42997c0617655c974d9a27c3383cfa9a6"
+}
