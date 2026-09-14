@@ -1,9 +1,9 @@
 {
-  "version": "105",
+  "version": "106",
   "channel": "admin",
   "required": false,
-  "filename": "DIAGPROG5_V105_BOOTSTRAP.py",
+  "filename": "DIAGPROG5_V106_BOOTSTRAP.py",
   "download_url": "https://diagprog5-updater.hugoneitor05cod3.workers.dev/download",
-  "sha256": "ab301e4cfb600965a92f0c584281e1646a19988cbc4afa44415ccbd2097bb782",
-  "notes": "V105 estable: actualizador TLS reparado con almacén de Windows y alternativa mediante Chrome, interfaz no bloqueante, validación SHA-256, arranque reversible, publicaciones desde pestaña limpia, bloqueo de duplicidad concurrente, modo prueba desactivado, menor carga de fondo y panel de borrado antiguo ajustable."
+  "sha256": "d347c59bd1f1fefb7671f73b70b14f594a9a6463b7adab601dbc7bd105f8fd7b",
+  "notes": "V106: Borrar antiguos ahora tiene un apartado visible en el menú lateral y un acceso grande desde Inicio. Conserva las reparaciones de actualización, estabilidad, publicación y borrado seguro de V105."
 }
