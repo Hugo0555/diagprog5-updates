@@ -1,37 +1,37 @@
 {
   "channel": "admin",
-  "version": "117",
-  "notes": "V117: corrige la confirmación final de borrado en Wallapop pulsando directamente el texto visible «Sí, eliminarlo» dentro del diálogo, con varias rutas de respaldo.",
+  "version": "124",
+  "notes": "V124: corrige el borrado masivo de más de 10 anuncios. Tras cada lote vuelve a Tus productos, espera a que Wallapop reconstruya el catálogo y reintenta la carga antes de seleccionar el siguiente lote.",
   "files": [],
   "patches": [
     {
       "file": "borrado_antiguos.py",
-      "old": "        confirm=_buscar_control(scope,[\n            r'^s[ií][, ]+(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',\n            r'^(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',\n            r'^confirmar$', r'^aceptar$'\n        ],roles=('button','menuitem'))\n        if confirm is not None:\n            confirm.click(timeout=5000)\n            return True\n    return False",
-      "new": "        confirm=_buscar_control(scope,[\n            r'^s[ií][, ]+(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',\n            r'^(eliminar|eliminarlo|borrar|borrarlo|retirar|retirarlo)( (este )?(anuncio|producto|art[ií]culo|item))?$',\n            r'^confirmar$', r'^aceptar$'\n        ],roles=('button','menuitem'))\n        if confirm is not None:\n            confirm.click(timeout=5000)\n            return True\n\n        # Wallapop muestra actualmente «Sí, eliminarlo». En algunos\n        # despliegues el botón no expone un role accesible fiable, así que\n        # usamos el texto visible dentro del propio diálogo como respaldo.\n        if _click_texto(scope,[\n            r'^s[ií][, ]*eliminarlo$',\n            r'^s[ií][, ]*borrarlo$',\n            r'^s[ií][, ]*retirarlo$',\n            r'^eliminarlo$',\n            r'^borrarlo$',\n            r'^retirarlo$'\n        ]):\n            return True\n\n        # Último respaldo: localizador CSS/texto sobre botones del diálogo.\n        for sel in ('button', '[role=\"button\"]'):\n            try:\n                loc=scope.locator(sel)\n                for i in range(min(loc.count(),30)):\n                    el=loc.nth(i)\n                    if not _visible_enabled(el):\n                        continue\n                    txt=(el.inner_text(timeout=1200) or '').strip()\n                    if re.fullmatch(r'(?i)s[ií][, ]*(eliminarlo|borrarlo|retirarlo)',txt):\n                        el.click(timeout=5000)\n                        return True\n            except Exception:\n                pass\n    return False",
+      "old": "    page.goto(destino, wait_until='domcontentloaded', timeout=45000)\n    page.wait_for_timeout(2200)\n",
+      "new": "    # V124: cada lote vuelve al catálogo y espera a que React reconstruya\n    # las filas. Tras un borrado masivo Wallapop a veces deja la ruta cargada\n    # pero el listado vacío durante unos segundos.\n    for intento in range(4):\n        page.goto(destino, wait_until='domcontentloaded', timeout=45000)\n        page.wait_for_timeout(1800 + intento*700)\n        try:\n            page.wait_for_load_state('networkidle', timeout=5000)\n        except Exception:\n            pass\n        try:\n            if page.locator('a[href*=\"/item/\"]').count()>0:\n                break\n        except Exception:\n            pass\n        if intento<3:\n            try: page.reload(wait_until='domcontentloaded', timeout=45000)\n            except Exception: pass\n            page.wait_for_timeout(1200)\n",
+      "count": 1
+    },
+    {
+      "file": "borrado_antiguos.py",
+      "old": "    if marcados==0:\n        raise RuntimeError('No pude localizar las filas de tus productos en el catálogo de Wallapop.')\n",
+      "new": "    if marcados==0:\n        # V124: recuperación específica entre lotes. La vista del catálogo\n        # puede quedar virtualizada/vacía después de confirmar el lote anterior.\n        for intento in range(3):\n            if stop.is_set(): raise Cancelado()\n            try:\n                page.goto('https://es.wallapop.com/app/catalog/published', wait_until='domcontentloaded', timeout=45000)\n                page.wait_for_timeout(2200 + intento*900)\n                page.evaluate('window.scrollTo(0,0)')\n                page.wait_for_timeout(500)\n                filas=_filas_catalogo(page)\n                if filas:\n                    # Reiniciamos la selección completa sobre el DOM recién reconstruido.\n                    return seleccionar_lote(page, cantidad, stop, evento)\n            except Cancelado:\n                raise\n            except Exception:\n                pass\n        raise RuntimeError('No pude localizar las filas de tus productos en el catálogo de Wallapop después de recargarlo.')\n",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "return \"116\"",
-      "new": "return \"117\"",
+      "old": "ventana.title(\"DIAGPROG5 Pro · V123\")",
+      "new": "ventana.title(\"DIAGPROG5 Pro · V124\")",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "ventana.title(\"DIAGPROG5 Pro · V116\")",
-      "new": "ventana.title(\"DIAGPROG5 Pro · V117\")",
+      "old": "text=\"PRO  /  V123\"",
+      "new": "text=\"PRO  /  V124\"",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "text=\"PRO  /  V116\"",
-      "new": "text=\"PRO  /  V117\"",
-      "count": 1
-    },
-    {
-      "file": "DIAGPROG5.py",
-      "old": "text=\"DIAGPROG5 PRO · V116\"",
-      "new": "text=\"DIAGPROG5 PRO · V117\"",
+      "old": "text=\"DIAGPROG5 PRO · V123\"",
+      "new": "text=\"DIAGPROG5 PRO · V124\"",
       "count": 1
     }
   ],
