@@ -1,19 +1,37 @@
 {
   "channel": "admin",
   "version": "124",
-  "notes": "V124: corrige el borrado masivo de más de 10 anuncios. Tras cada lote vuelve a Tus productos, espera a que Wallapop reconstruya el catálogo y reintenta la carga antes de seleccionar el siguiente lote.",
+  "notes": "V124 FIX: borrado masivo estable sin abrir múltiples pestañas. Reutiliza una sola pestaña de Wallapop, espera a que el catálogo se reconstruya entre lotes y continúa 10+10 hasta la cantidad indicada.",
   "files": [],
   "patches": [
     {
       "file": "borrado_antiguos.py",
-      "old": "    page.goto(destino, wait_until='domcontentloaded', timeout=45000)\n    page.wait_for_timeout(2200)\n",
-      "new": "    # V124: cada lote vuelve al catálogo y espera a que React reconstruya\n    # las filas. Tras un borrado masivo Wallapop a veces deja la ruta cargada\n    # pero el listado vacío durante unos segundos.\n    for intento in range(4):\n        page.goto(destino, wait_until='domcontentloaded', timeout=45000)\n        page.wait_for_timeout(1800 + intento*700)\n        try:\n            page.wait_for_load_state('networkidle', timeout=5000)\n        except Exception:\n            pass\n        try:\n            if page.locator('a[href*=\"/item/\"]').count()>0:\n                break\n        except Exception:\n            pass\n        if intento<3:\n            try: page.reload(wait_until='domcontentloaded', timeout=45000)\n            except Exception: pass\n            page.wait_for_timeout(1200)\n",
+      "old": "    page.goto(destino, wait_until='domcontentloaded', timeout=45000)\n    page.wait_for_timeout(2200)",
+      "new": "    # V124 FIX: siempre reutiliza ESTA MISMA pestaña.\n    # No abre pestañas nuevas entre lotes.\n    for intento in range(4):\n        try:\n            page.goto(destino, wait_until='domcontentloaded', timeout=45000)\n            page.wait_for_timeout(1800 + intento*700)\n            try:\n                page.wait_for_load_state('networkidle', timeout=4000)\n            except Exception:\n                pass\n            if '/app/catalog' in (page.url or ''):\n                # Espera además a que aparezcan filas reales del catálogo.\n                for _ in range(12):\n                    if page.locator('a[href*=\"/item/\"]').count()>0:\n                        return\n                    page.wait_for_timeout(500)\n        except Exception:\n            if intento==3: raise\n        if intento<3:\n            try: page.reload(wait_until='domcontentloaded',timeout=45000)\n            except Exception: pass\n            page.wait_for_timeout(900)\n    # continúa abajo para producir los mensajes de sesión/ruta habituales",
       "count": 1
     },
     {
       "file": "borrado_antiguos.py",
-      "old": "    if marcados==0:\n        raise RuntimeError('No pude localizar las filas de tus productos en el catálogo de Wallapop.')\n",
-      "new": "    if marcados==0:\n        # V124: recuperación específica entre lotes. La vista del catálogo\n        # puede quedar virtualizada/vacía después de confirmar el lote anterior.\n        for intento in range(3):\n            if stop.is_set(): raise Cancelado()\n            try:\n                page.goto('https://es.wallapop.com/app/catalog/published', wait_until='domcontentloaded', timeout=45000)\n                page.wait_for_timeout(2200 + intento*900)\n                page.evaluate('window.scrollTo(0,0)')\n                page.wait_for_timeout(500)\n                filas=_filas_catalogo(page)\n                if filas:\n                    # Reiniciamos la selección completa sobre el DOM recién reconstruido.\n                    return seleccionar_lote(page, cantidad, stop, evento)\n            except Cancelado:\n                raise\n            except Exception:\n                pass\n        raise RuntimeError('No pude localizar las filas de tus productos en el catálogo de Wallapop después de recargarlo.')\n",
+      "old": "                context=browser.contexts[0]\n                page=context.new_page()\n                restante=n; lote_num=0",
+      "new": "                context=browser.contexts[0]\n                # V124 FIX: reutiliza una pestaña existente. Antes se creaba\n                # context.new_page() en cada recuperación y podían acumularse pestañas.\n                vivas=[q for q in context.pages if not q.is_closed()]\n                catalogo=[q for q in vivas if '/app/catalog' in (q.url or '')]\n                page=catalogo[-1] if catalogo else (vivas[-1] if vivas else context.new_page())\n                # Cierra únicamente duplicados del catálogo creados por versiones anteriores.\n                for q in list(context.pages):\n                    if q is not page and not q.is_closed() and '/app/catalog' in (q.url or ''):\n                        try: q.close()\n                        except Exception: pass\n                restante=n; lote_num=0",
+      "count": 1
+    },
+    {
+      "file": "borrado_antiguos.py",
+      "old": "                    if page is None or page.is_closed():\n                        vivas=[q for q in context.pages if not q.is_closed()]\n                        page=vivas[-1] if vivas else context.new_page()",
+      "new": "                    if page is None or page.is_closed():\n                        vivas=[q for q in context.pages if not q.is_closed()]\n                        if not vivas:\n                            raise RuntimeError('Chromium cerró todas las pestañas. Vuelve a iniciar el navegador del bot.')\n                        catalogo=[q for q in vivas if '/app/catalog' in (q.url or '')]\n                        page=catalogo[-1] if catalogo else vivas[-1]",
+      "count": 1
+    },
+    {
+      "file": "borrado_antiguos.py",
+      "old": "                        vivas=[q for q in context.pages if not q.is_closed()]\n                        page=vivas[-1] if vivas else context.new_page()\n                        marcados,total=seleccionar_lote(page,tam,self.stop,None)",
+      "new": "                        vivas=[q for q in context.pages if not q.is_closed()]\n                        if not vivas:\n                            raise RuntimeError('Chromium cerró todas las pestañas durante el borrado.')\n                        catalogo=[q for q in vivas if '/app/catalog' in (q.url or '')]\n                        page=catalogo[-1] if catalogo else vivas[-1]\n                        marcados,total=seleccionar_lote(page,tam,self.stop,None)",
+      "count": 1
+    },
+    {
+      "file": "borrado_antiguos.py",
+      "old": "                    if restante>0:\n                        if self.stop.wait(pausa): raise Cancelado()",
+      "new": "                    if restante>0:\n                        if self.stop.wait(pausa): raise Cancelado()\n                        # V124 FIX: la siguiente selección se hace en la misma pestaña,\n                        # navegando de nuevo al catálogo y esperando su reconstrucción.\n                        abrir_mis_productos(page)\n                        page.evaluate('window.scrollTo(0,0)')\n                        page.wait_for_timeout(900)",
       "count": 1
     },
     {
