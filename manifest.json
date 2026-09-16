@@ -1,37 +1,43 @@
 {
   "channel": "admin",
-  "version": "130",
-  "notes": "V130: localizado el bloqueo real de la cola. El límite diario heredado podía cancelar inmediatamente con Chromium/Playwright OK, 0 errores e Intentos 0. Ahora ese límite es orientativo salvo que se active explícitamente bloquear_al_llegar_limite_diario. La cola entra al primer anuncio y registra el intento real.",
+  "version": "131",
+  "notes": "V131: corrige Inicio de venta y Ver error. Publicar reutiliza una sola pestaña Wallapop, entra directamente en /app/catalog/upload y ya no depende exclusivamente del texto Vender del encabezado. Ver error abre el primer error real si el selector quedó desincronizado y muestra una ventana con fase, motivo, intentos y diagnóstico.",
   "files": [],
   "patches": [
     {
       "file": "DIAGPROG5.py",
-      "old": "            if limite_diario_alcanzado():\n                cola_cancelar = True\n\n                ventana.after(\n                    0,\n                    lambda: estado.configure(\n                        text=(\n                            \"⏹ Límite diario de publicaciones alcanzado. \"\n                            \"Los anuncios restantes quedan pendientes.\"\n                        )\n                    )\n                )\n                break\n",
-      "new": "            if limite_diario_alcanzado():\n                # V130: el límite diario heredado deja de cancelar la cola\n                # silenciosamente. Solo bloquea si el usuario activa de forma\n                # explícita bloquear_al_llegar_limite_diario.\n                cfg_limite = cargar_configuracion_general()\n                if bool(cfg_limite.get(\"bloquear_al_llegar_limite_diario\", False)):\n                    cola_cancelar = True\n                    ventana.after(\n                        0,\n                        lambda: estado.configure(\n                            text=(\n                                \"⏹ Límite diario alcanzado (bloqueo activado). \"\n                                \"Los anuncios restantes quedan pendientes.\"\n                            )\n                        )\n                    )\n                    break\n                else:\n                    try:\n                        ventana.after(\n                            0,\n                            lambda: estado.configure(\n                                text=\"⚠️ Límite diario orientativo alcanzado · continuando la cola...\"\n                            )\n                        )\n                    except Exception:\n                        pass\n",
+      "old": "def _crear_pagina_limpia_wallapop(contexto):\n    \"\"\"\n    Crea una pestaña NUEVA para un único anuncio de la cola.\n\n    Antes de abrirla, elimina TODAS las pestañas Wallapop anteriores.\n    La sesión/login se conserva porque pertenece al contexto/perfil Chromium.\n    \"\"\"\n    actualizar_fase(\n        \"Pestaña limpia\",\n        \"cerrando pestañas anteriores y abriendo una nueva\"\n    )\n\n    # Evita acumulación: antes de cada anuncio no debe quedar ninguna\n    # pestaña vieja de Wallapop.\n    _cerrar_todas_pestanas_wallapop(\n        contexto\n    )\n\n    try:\n        pagina = contexto.new_page()\n    except Exception as e:\n        raise RuntimeError(\n            \"No pude crear una pestaña nueva de Wallapop: \" + str(e)\n        )\n\n    try:\n        pagina.goto(\n            \"https://es.wallapop.com\",\n            wait_until=\"domcontentloaded\",\n            timeout=30000\n        )\n\n        pagina.bring_to_front()\n\n        # Pequeña espera para dejar que el frontend termine de iniciar.\n        pagina.wait_for_timeout(900)\n\n        _comprobar_sesion_wallapop(pagina)\n\n        if not _pagina_responde_wallapop(\n            pagina,\n            obtener_config_rendimiento().get(\n                \"timeout_wallapop\",\n                12\n            )\n        ):\n            raise RuntimeError(\n                \"La pestaña nueva de Wallapop no responde correctamente.\"\n            )\n\n        print(\n            \"Pestaña limpia preparada para el anuncio:\",\n            pagina.url\n        )\n\n        return pagina\n\n    except Exception:\n        try:\n            if not pagina.is_closed():\n                pagina.close()\n        except Exception:\n            pass\n\n        raise\n",
+      "new": "def _crear_pagina_limpia_wallapop(contexto):\n    \"\"\"V131: reutiliza una pestaña Wallapop viva y entra al flujo de subida.\"\"\"\n    actualizar_fase(\"Pestaña Wallapop\", \"reutilizando sesión activa\")\n    try:\n        paginas=[q for q in contexto.pages if not q.is_closed()]\n    except Exception:\n        paginas=[]\n    wallapop=[]\n    for q in paginas:\n        try:\n            if \"wallapop.com\" in (q.url or \"\").lower(): wallapop.append(q)\n        except Exception: pass\n    pagina=wallapop[-1] if wallapop else (paginas[-1] if paginas else contexto.new_page())\n    for q in wallapop:\n        if q is pagina: continue\n        try: q.close(run_before_unload=False)\n        except TypeError:\n            try: q.close()\n            except Exception: pass\n        except Exception: pass\n    try:\n        if \"/app/catalog/upload\" not in (pagina.url or \"\").lower():\n            pagina.goto(\"https://es.wallapop.com/app/catalog/upload\",wait_until=\"domcontentloaded\",timeout=30000)\n        pagina.bring_to_front()\n        pagina.wait_for_timeout(1400)\n        _comprobar_sesion_wallapop(pagina)\n        if not _pagina_responde_wallapop(pagina,obtener_config_rendimiento().get(\"timeout_wallapop\",12)):\n            raise RuntimeError(\"Wallapop no respondió al preparar la publicación.\")\n        return pagina\n    except Exception:\n        raise\n",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "APP_VERSION = \"129\"",
-      "new": "APP_VERSION = \"130\"",
+      "old": "    print(\"Buscando el botón Vender...\")\n    try:\n        page.get_by_text(\"Vender\", exact=True).first.wait_for(state=\"visible\", timeout=15000)\n    except Exception:\n        _comprobar_sesion_wallapop(page)\n        raise RuntimeError(\"Wallapop no mostró Vender a tiempo. Revisa sesión, avisos y conexión en el navegador.\")\n\n    vender = page.get_by_role(\"button\", name=re.compile(r\"^Vender$\", re.I))\n    if not vender.count():\n        vender = page.get_by_text(\"Vender\", exact=True)\n\n    if not vender.count():\n        raise RuntimeError(\n            \"No encuentro el botón Vender. \"\n            \"Deja abierta una página de Wallapop con tu sesión iniciada.\"\n        )\n\n    vender.first.click(timeout=7000)\n    print(\"Vender pulsado.\")\n",
+      "new": "    print(\"Buscando el acceso a Vender...\")\n    _comprobar_sesion_wallapop(page)\n    candidatos_vender=[\n        page.get_by_role(\"button\",name=re.compile(r\"^Vender$\",re.I)),\n        page.get_by_role(\"link\",name=re.compile(r\"^Vender$\",re.I)),\n        page.get_by_text(\"Vender\",exact=True),\n        page.locator('a[href*=\"/app/catalog/upload\"]'),\n    ]\n    vender=None\n    for candidato in candidatos_vender:\n        try:\n            if candidato.count() and candidato.first.is_visible():\n                vender=candidato.first; break\n        except Exception: pass\n    if vender is not None:\n        vender.click(timeout=7000)\n    else:\n        page.goto(\"https://es.wallapop.com/app/catalog/upload\",wait_until=\"domcontentloaded\",timeout=30000)\n        page.wait_for_timeout(1400)\n        _comprobar_sesion_wallapop(page)\n        if page.locator(\"#summary\").count() or page.locator(\"#dropAreaPreviewInput\").count() or page.locator('input[name=\"category_leaf_id\"]').count() or formulario_producto_visible(page):\n            return True\n",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "ventana.title(\"DIAGPROG5 Pro · V129\")",
-      "new": "ventana.title(\"DIAGPROG5 Pro · V130\")",
+      "old": "APP_VERSION = \"130\"",
+      "new": "APP_VERSION = \"131\"",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "text=\"PRO  /  V129\"",
-      "new": "text=\"PRO  /  V130\"",
+      "old": "ventana.title(\"DIAGPROG5 Pro · V130\")",
+      "new": "ventana.title(\"DIAGPROG5 Pro · V131\")",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "text=\"DIAGPROG5 PRO · V129\"",
-      "new": "text=\"DIAGPROG5 PRO · V130\"",
+      "old": "text=\"PRO  /  V130\"",
+      "new": "text=\"PRO  /  V131\"",
+      "count": 1
+    },
+    {
+      "file": "DIAGPROG5.py",
+      "old": "text=\"DIAGPROG5 PRO · V130\"",
+      "new": "text=\"DIAGPROG5 PRO · V131\"",
       "count": 1
     }
   ],
