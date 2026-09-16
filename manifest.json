@@ -1,31 +1,43 @@
 {
   "channel": "admin",
-  "version": "128",
-  "notes": "V128: corrige la cola que terminaba con Chromium conectado pero 0 intentos. El supervisor deja de bloquear silenciosamente la publicación cuando su comprobación previa no es concluyente; el publicador entra al anuncio, incrementa Intentos y registra la fase real si falla.",
+  "version": "129",
+  "notes": "V129: corrige definitivamente la confirmación de arranque del actualizador. dp5_runtime tenía la versión READY fijada por error a V114; ahora confirma la versión real. Incluye además la corrección V128 para que la cola no termine silenciosamente antes del primer intento.",
   "files": [],
   "patches": [
     {
-      "file": "DIAGPROG5.py",
-      "old": "            if not salud_ok:\n                config_supervisor = _supervisor_config()\n\n                if config_supervisor[\"pausar_si_falla\"]:\n                    cola_cancelar = True\n\n                    ventana.after(\n                        0,\n                        lambda: estado.configure(\n                            text=(\n                                \"⛔ Supervisor: Wallapop/Chromium no están sanos. \"\n                                \"La cola se ha detenido antes de provocar errores en cascada.\"\n                            )\n                        )\n                    )\n                    break\n\n                item[\"estado_cola\"] = \"ERROR\"\n                item[\"error_fase\"] = \"Supervisor\"\n                item[\"error_motivo\"] = supervisor_ultimo_detalle\n                item[\"error_fecha\"] = time.strftime(\n                    \"%d/%m/%Y %H:%M:%S\"\n                )\n\n                guardar_cola_en_disco()\n\n                ventana.after(\n                    0,\n                    refrescar_cola\n                )\n                continue\n",
-      "new": "            if not salud_ok:\n                # V128: el supervisor es diagnóstico, no una barrera silenciosa.\n                # Si CDP/Chromium siguen vivos dejamos que el publicador real haga\n                # el intento y registre la fase exacta si algo falla.\n                detalle_supervisor = supervisor_ultimo_detalle or \"Comprobación previa no concluyente\"\n                print(\"Supervisor V128: aviso no bloqueante:\", detalle_supervisor)\n                try:\n                    ventana.after(\n                        0,\n                        lambda d=detalle_supervisor: estado.configure(\n                            text=f\"⚠️ Supervisor: {d} · intentando publicar de todos modos...\"\n                        )\n                    )\n                except Exception:\n                    pass\n\n                if not _puerto_chrome_activo():\n                    item[\"estado_cola\"] = \"ERROR\"\n                    item[\"error_fase\"] = \"Chromium/CDP\"\n                    item[\"error_motivo\"] = detalle_supervisor\n                    item[\"error_fecha\"] = time.strftime(\"%d/%m/%Y %H:%M:%S\")\n                    item[\"intentos\"] = max(1, int(item.get(\"intentos\", 0)))\n                    cola_errores_sesion += 1\n                    guardar_cola_en_disco()\n                    ventana.after(0, refrescar_cola)\n                    continue\n",
+      "file": "dp5_runtime.py",
+      "old": "    guardar_json_atomico(data / 'instalacion_actual.json', {'version': '114', 'programa': str(source)})",
+      "new": "    # V129: confirmar la versión real, no la antigua V114 fija.\n    version = str(g.get('APP_VERSION') or '').strip()\n    if not version:\n        import re\n        titulo = str(g.get('VERSION_APP') or g.get('__version__') or '')\n        m = re.search(r'(?i)\\\\bV?(\\\\d{2,})\\\\b', titulo)\n        version = m.group(1) if m else '129'\n    guardar_json_atomico(data / 'instalacion_actual.json', {'version': version, 'programa': str(source)})",
+      "count": 1
+    },
+    {
+      "file": "dp5_runtime.py",
+      "old": "            guardar_json_atomico(target, {'version': '114', 'pid': os.getpid(), 'programa': str(source)})",
+      "new": "            guardar_json_atomico(target, {'version': version, 'pid': os.getpid(), 'programa': str(source)})",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
       "old": "ventana.title(\"DIAGPROG5 Pro · V127\")",
-      "new": "ventana.title(\"DIAGPROG5 Pro · V128\")",
+      "new": "APP_VERSION = \"129\"\nventana.title(\"DIAGPROG5 Pro · V129\")",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
       "old": "text=\"PRO  /  V127\"",
-      "new": "text=\"PRO  /  V128\"",
+      "new": "text=\"PRO  /  V129\"",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
       "old": "text=\"DIAGPROG5 PRO · V127\"",
-      "new": "text=\"DIAGPROG5 PRO · V128\"",
+      "new": "text=\"DIAGPROG5 PRO · V129\"",
+      "count": 1
+    },
+    {
+      "file": "DIAGPROG5.py",
+      "old": "            if not salud_ok:\n                config_supervisor = _supervisor_config()\n\n                if config_supervisor[\"pausar_si_falla\"]:\n                    cola_cancelar = True\n\n                    ventana.after(\n                        0,\n                        lambda: estado.configure(\n                            text=(\n                                \"⛔ Supervisor: Wallapop/Chromium no están sanos. \"\n                                \"La cola se ha detenido antes de provocar errores en cascada.\"\n                            )\n                        )\n                    )\n                    break\n\n                item[\"estado_cola\"] = \"ERROR\"\n                item[\"error_fase\"] = \"Supervisor\"\n                item[\"error_motivo\"] = supervisor_ultimo_detalle\n                item[\"error_fecha\"] = time.strftime(\n                    \"%d/%m/%Y %H:%M:%S\"\n                )\n\n                guardar_cola_en_disco()\n\n                ventana.after(\n                    0,\n                    refrescar_cola\n                )\n                continue\n",
+      "new": "            if not salud_ok:\n                # V128/V129: el supervisor diagnostica, pero no cancela silenciosamente.\n                detalle_supervisor = supervisor_ultimo_detalle or \"Comprobación previa no concluyente\"\n                print(\"Supervisor V129: aviso no bloqueante:\", detalle_supervisor)\n                try:\n                    ventana.after(0, lambda d=detalle_supervisor: estado.configure(text=f\"⚠️ Supervisor: {d} · intentando publicar de todos modos...\"))\n                except Exception:\n                    pass\n                if not _puerto_chrome_activo():\n                    item[\"estado_cola\"] = \"ERROR\"\n                    item[\"error_fase\"] = \"Chromium/CDP\"\n                    item[\"error_motivo\"] = detalle_supervisor\n                    item[\"error_fecha\"] = time.strftime(\"%d/%m/%Y %H:%M:%S\")\n                    item[\"intentos\"] = max(1, int(item.get(\"intentos\", 0)))\n                    cola_errores_sesion += 1\n                    guardar_cola_en_disco()\n                    ventana.after(0, refrescar_cola)\n                    continue\n",
       "count": 1
     }
   ],
