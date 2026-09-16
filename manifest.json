@@ -1,31 +1,43 @@
 {
   "channel": "admin",
-  "version": "126",
-  "notes": "V126: corrige el arranque de publicación. El preflight de la cola ya no aborta antes de que el supervisor pueda iniciar Chromium; inicia/recupera Chromium antes de lanzar el hilo y deja un error visible si no puede hacerlo.",
+  "version": "127",
+  "notes": "V127: corrige Chromium que se abría y se cerraba al iniciar la cola. El supervisor y la recuperación ya no cierran la última pestaña de Wallapop; reutilizan una pestaña existente y mantienen Chromium vivo para publicar.",
   "files": [],
   "patches": [
     {
       "file": "DIAGPROG5.py",
-      "old": "    # V125: la cola arranca aunque Chromium esté cerrado; el supervisor\n    # lo inicia automáticamente en el hilo antes del primer anuncio.\n    cola_en_ejecucion = True",
-      "new": "    # V126: iniciar/recuperar Chromium ANTES de marcar la cola en ejecución.\n    # Había otro preflight que podía terminar la sesión antes de entrar al\n    # supervisor V125, dejando 0 intentos y 10 pendientes.\n    if not _puerto_chrome_activo():\n        try:\n            _asegurar_chromium_controlable()\n            limite = time.time() + 15\n            while time.time() < limite and not _puerto_chrome_activo():\n                time.sleep(0.5)\n        except Exception as exc:\n            messagebox.showerror(\"Publicación detenida\", f\"No pude iniciar Chromium automáticamente.\\n\\n{exc}\")\n            return\n    if not _puerto_chrome_activo():\n        messagebox.showerror(\"Publicación detenida\", \"Chromium se abrió, pero el puerto 9222 no respondió. Cierra únicamente el Chromium del bot y vuelve a intentarlo.\")\n        return\n\n    cola_en_ejecucion = True",
+      "old": "                contexto = navegador.contexts[0]\n\n                _cerrar_todas_pestanas_wallapop(\n                    contexto\n                )\n\n                pagina = contexto.new_page()",
+      "new": "                contexto = navegador.contexts[0]\n\n                # V127: no cerrar la última ventana de Wallapop en el preflight.\n                paginas_vivas = [q for q in contexto.pages if not q.is_closed()]\n                wallapop_vivas = [q for q in paginas_vivas if \"wallapop.com\" in (q.url or \"\").lower()]\n                pagina = wallapop_vivas[-1] if wallapop_vivas else (paginas_vivas[-1] if paginas_vivas else contexto.new_page())",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "ventana.title(\"DIAGPROG5 Pro · V125\")",
-      "new": "ventana.title(\"DIAGPROG5 Pro · V126\")",
+      "old": "                finally:\n                    try:\n                        if not pagina.is_closed():\n                            pagina.close()\n                    except Exception:\n                        pass\n\n            supervisor_ultimo_estado = \"OK\"",
+      "new": "                finally:\n                    # V127: mantener viva la pestaña del bot después del preflight.\n                    pass\n\n            supervisor_ultimo_estado = \"OK\"",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "text=\"PRO  /  V125\"",
-      "new": "text=\"PRO  /  V126\"",
+      "old": "        contexto = navegador.contexts[0]\n\n        _cerrar_todas_pestanas_wallapop(\n            contexto\n        )\n\n        pagina = contexto.new_page()\n\n        try:\n            pagina.goto(\n                \"https://es.wallapop.com\",\n                wait_until=\"domcontentloaded\",\n                timeout=30000\n            )\n            pagina.wait_for_timeout(800)\n            _comprobar_sesion_wallapop(pagina)\n        finally:\n            try:\n                if not pagina.is_closed():\n                    pagina.close()\n            except Exception:\n                pass",
+      "new": "        contexto = navegador.contexts[0]\n\n        # V127: recuperación no destructiva; reutiliza una pestaña viva.\n        paginas_vivas = [q for q in contexto.pages if not q.is_closed()]\n        wallapop_vivas = [q for q in paginas_vivas if \"wallapop.com\" in (q.url or \"\").lower()]\n        pagina = wallapop_vivas[-1] if wallapop_vivas else (paginas_vivas[-1] if paginas_vivas else contexto.new_page())\n\n        pagina.goto(\n            \"https://es.wallapop.com\",\n            wait_until=\"domcontentloaded\",\n            timeout=30000\n        )\n        pagina.wait_for_timeout(800)\n        _comprobar_sesion_wallapop(pagina)",
       "count": 1
     },
     {
       "file": "DIAGPROG5.py",
-      "old": "text=\"DIAGPROG5 PRO · V125\"",
-      "new": "text=\"DIAGPROG5 PRO · V126\"",
+      "old": "ventana.title(\"DIAGPROG5 Pro · V126\")",
+      "new": "ventana.title(\"DIAGPROG5 Pro · V127\")",
+      "count": 1
+    },
+    {
+      "file": "DIAGPROG5.py",
+      "old": "text=\"PRO  /  V126\"",
+      "new": "text=\"PRO  /  V127\"",
+      "count": 1
+    },
+    {
+      "file": "DIAGPROG5.py",
+      "old": "text=\"DIAGPROG5 PRO · V126\"",
+      "new": "text=\"DIAGPROG5 PRO · V127\"",
       "count": 1
     }
   ],
